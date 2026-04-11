@@ -1,0 +1,11 @@
+{
+  "id": "obsidian-llm-wiki",
+  "name": "LLM Wiki",
+  "version": "0.2.0",
+  "minAppVersion": "0.15.0",
+  "description": "LLM Wiki — Build and maintain a personal wiki with LLM agents in Obsidian",
+  "author": "gusibi",
+  "authorUrl": "",
+  "fundingUrl": "",
+  "isDesktopOnly": false
+}

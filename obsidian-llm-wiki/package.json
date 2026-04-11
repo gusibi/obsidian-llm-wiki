@@ -1,0 +1,40 @@
+{
+  "name": "obsidian-llm-wiki",
+  "version": "0.1.0",
+  "description": "Integrate LLM providers with Obsidian for intelligent file editing and knowledge management",
+  "main": "main.js",
+  "scripts": {
+    "css": "npx @tailwindcss/cli -i src/styles.css -o styles.css --minify",
+    "css:dev": "npx @tailwindcss/cli -i src/styles.css -o styles.css --watch",
+    "dev": "npm run css && node esbuild.config.mjs",
+    "build": "npm run css && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
+  },
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "claude",
+    "cursor",
+    "ai",
+    "acp",
+    "llm-wiki"
+  ],
+  "author": "gusibi",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.0.0",
+    "@types/node": "^16.11.6",
+    "@typescript-eslint/eslint-plugin": "5.29.0",
+    "@typescript-eslint/parser": "5.29.0",
+    "builtin-modules": "3.3.0",
+    "esbuild": "0.17.3",
+    "obsidian": "latest",
+    "tailwindcss": "^4.0.0",
+    "tslib": "2.4.0",
+    "typescript": "4.7.4"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2",
+    "ws": "^8.16.0"
+  }
+}

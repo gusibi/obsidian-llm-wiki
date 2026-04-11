@@ -1,0 +1,78 @@
+# {{WIKI_TITLE}}
+
+{{WIKI_DESCRIPTION}}
+
+## Core Idea
+
+LLM 不是每次查询时临时检索，而是**持续构建和维护一个结构化的 wiki**。知识编译一次，持续更新，越用越丰富。
+
+**你负责**：筛选内容源、提出好问题、把控方向。
+**LLM 负责**：总结、交叉引用、归档、维护一致性。
+
+## Directory Structure
+
+```
+{{DIR_TREE}}
+```
+
+## Roles
+
+| Directory | Writer | Reader | Purpose |
+|-----------|--------|--------|---------|
+| `drafts/` | You | You | Fragmented ideas, inspirations, unformed notes. No format requirements. |
+| `raw/` | You | LLM (read-only) | Immutable source of truth. Files are never modified, moved, or deleted once added. |
+| `wiki/` | LLM | You + LLM | LLM-maintained structured knowledge base. |
+| `legacy/` | Nobody | You + LLM (read-only) | Frozen archive of existing materials. |
+
+## Workflows
+
+### Ingest
+
+```
+You: place file into raw/ subdirectory
+You: tell LLM "ingest raw/category/xxx.md"
+LLM: read → discuss key points with you → after consensus, execute in one pass:
+     write summary → update concepts/entities (with source attribution) → cross-reference → update index → append log
+```
+
+### Query
+
+```
+You: ask a question
+LLM: read index.md → find relevant wiki pages → synthesize answer with citations
+You: optionally file good answers as new wiki pages
+LLM: log filed queries to log.md (only filed queries are recorded)
+```
+
+### Lint
+
+Periodically ask LLM to health-check: contradictions, stale content, orphan pages, missing concepts, missing source attribution, knowledge gaps (with search suggestions). Full report goes to `wiki/lint-report.md`; log.md only gets a summary line.
+
+### Legacy Scan
+
+Lightweight scan of `legacy/` — read only titles and first 10 lines, generate `legacy-index.md` as a map of historical content.
+
+## Knowledge Traceability
+
+Every piece of information in the wiki is traceable back to its raw source:
+
+- **Summary pages**: one-to-one mapping with raw files
+- **Concept / Entity pages**: synthesize multiple sources, each section attributed with `(source: [[actual-summary-filename]])`
+- **Frontmatter sources**: use Obsidian wikilink format `"[[filename]]"`, filename only without paths — Obsidian locates files automatically
+
+## Quick Start
+
+```bash
+# Initialize directories
+{{INIT_COMMANDS}}
+
+# Link or copy existing library (optional)
+# ln -s /path/to/your/library legacy/
+```
+
+## Tools
+
+- **Obsidian**: Browse wiki with Graph view and Dataview queries.
+- **Obsidian Web Clipper**: Convert web articles to Markdown for `raw/`.
+- **qmd**: Local Markdown search engine for larger wikis.
+- **Git**: Version history for free.

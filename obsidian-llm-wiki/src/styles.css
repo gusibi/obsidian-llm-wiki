@@ -1,0 +1,1242 @@
+@import "tailwindcss";
+
+@theme {
+  --color-claude: #C96442;
+  --color-claude-hover: #AE5638;
+  --color-claude-light: #F4E8E2;
+  --color-claude-glow: #C9644218;
+}
+
+/* ── Accent Override ─────────────────────────────────────────────────────────
+   Replace Obsidian's default blue accent with Claude's warm terracotta
+   so every child that reads --interactive-accent inherits the new hue.    */
+
+.llm-wiki-view {
+  --interactive-accent: #C96442;
+  --interactive-accent-hover: #AE5638;
+  @apply flex flex-col h-full overflow-hidden;
+}
+
+.theme-dark .llm-wiki-view {
+  --interactive-accent: #DA7756;
+  --interactive-accent-hover: #C96442;
+}
+
+/* ── Wiki Panel ──────────────────────────────────────────────────────────── */
+
+.wiki-panel {
+  @apply shrink-0 overflow-hidden bg-[var(--background-secondary)]
+         border-b border-[var(--background-modifier-border)]
+         transition-all duration-200;
+  max-height: 280px;
+}
+
+.wiki-panel--collapsed {
+  max-height: 36px;
+}
+
+.wiki-panel--collapsed .wiki-panel-body {
+  @apply opacity-0 pointer-events-none -translate-y-1.5;
+}
+
+.wiki-panel-bar {
+  @apply flex items-center justify-between select-none px-2.5 py-1.5;
+  min-height: 36px;
+}
+
+.wiki-panel-bar-left {
+  @apply flex items-center gap-1.5 font-semibold uppercase
+         text-[12px] tracking-[0.04em] text-[var(--text-muted)];
+}
+
+.wiki-panel-title-icon {
+  @apply flex items-center text-claude;
+}
+
+.wiki-panel-title-icon svg {
+  @apply size-3.5;
+}
+
+.wiki-panel-bar-right {
+  @apply flex items-center gap-0.5;
+}
+
+.wiki-panel-icon-btn {
+  @apply flex items-center justify-center border-none cursor-pointer
+         rounded-md bg-transparent text-[var(--text-muted)]
+         p-[3px] transition-colors duration-200;
+}
+
+.wiki-panel-icon-btn:hover {
+  @apply text-[var(--text-normal)] bg-claude/15;
+}
+
+.wiki-panel-icon-btn svg {
+  @apply size-3.5;
+}
+
+.wiki-panel-body {
+  @apply px-2.5 pb-2.5 transition-all duration-200;
+}
+
+/* ── Status Badge ────────────────────────────────────────────────────────── */
+
+.wiki-status-badge {
+  @apply flex items-center gap-1.5 font-medium text-[12px] rounded-md mb-2;
+  padding: 5px 10px;
+}
+
+.wiki-status-badge-icon {
+  @apply flex shrink-0;
+}
+
+.wiki-status-badge-icon svg {
+  @apply size-3.5;
+}
+
+.wiki-status-badge--ok {
+  background: color-mix(in srgb, var(--color-green) 12%, transparent);
+  color: var(--color-green);
+  border: 1px solid color-mix(in srgb, var(--color-green) 24%, transparent);
+}
+
+.wiki-status-badge--empty {
+  background: color-mix(in srgb, var(--color-orange) 12%, transparent);
+  color: var(--color-orange);
+  border: 1px solid color-mix(in srgb, var(--color-orange) 24%, transparent);
+}
+
+/* ── Wiki Action Buttons ─────────────────────────────────────────────────── */
+
+.wiki-panel-actions {
+  @apply flex flex-wrap gap-1.5;
+}
+
+.wiki-action-btn {
+  @apply inline-flex items-center gap-[5px] cursor-pointer font-medium
+         leading-none text-[12px] rounded-md
+         bg-[var(--background-secondary-alt)] text-[var(--text-normal)]
+         border border-[var(--background-modifier-border)]
+         transition-all duration-200;
+  padding: 4px 10px;
+}
+
+.wiki-action-btn:hover:not([disabled]) {
+  @apply border-claude bg-claude/14 text-claude;
+}
+
+.wiki-action-btn[disabled] {
+  @apply opacity-35 cursor-not-allowed;
+}
+
+.wiki-action-btn--cta {
+  @apply bg-claude text-white border-transparent;
+}
+
+.wiki-action-btn--cta:hover:not([disabled]) {
+  @apply bg-claude-hover text-white border-transparent;
+}
+
+.wiki-action-btn-icon {
+  @apply flex items-center;
+}
+
+.wiki-action-btn-icon svg {
+  @apply size-3;
+}
+
+/* ── Chat Container ──────────────────────────────────────────────────────── */
+
+.llm-wiki-view .claude-chat-container {
+  @apply flex-1 min-h-0;
+}
+
+.claude-chat-container {
+  @apply flex flex-col;
+}
+
+/* ── Chat Header ─────────────────────────────────────────────────────────── */
+
+.llm-wiki-view .claude-chat-header {
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding: 6px 12px;
+}
+
+.claude-chat-header {
+  @apply flex items-center justify-between;
+}
+
+.claude-header-left {
+  @apply flex items-center gap-2;
+}
+
+.claude-header-right {
+  @apply flex items-center gap-1.5;
+}
+
+.claude-provider-select {
+  @apply text-xs px-1.5 py-0.5 rounded
+         bg-[var(--background-modifier-form-field)]
+         border border-[var(--background-modifier-border)]
+         text-[var(--text-normal)];
+}
+
+/* ── Session Controls ────────────────────────────────────────────────────── */
+
+.claude-session-controls {
+  @apply flex items-center gap-1;
+}
+
+.claude-session-picker {
+  @apply flex items-center;
+}
+
+.claude-session-select {
+  @apply text-xs rounded-l-sm py-0.5 px-1.5
+         bg-[var(--background-modifier-form-field)]
+         border border-[var(--background-modifier-border)]
+         text-[var(--text-normal)];
+  max-width: 140px;
+}
+
+.claude-session-button {
+  @apply flex items-center justify-center border-none cursor-pointer
+         rounded bg-transparent text-[var(--text-muted)]
+         p-1 transition-colors duration-150;
+}
+
+.claude-session-button:hover {
+  @apply text-[var(--text-normal)] bg-[var(--background-modifier-hover)];
+}
+
+.claude-session-button svg {
+  @apply size-3.5;
+}
+
+.claude-session-trigger {
+  @apply rounded-l-none border-l-0
+         border border-[var(--background-modifier-border)]
+         bg-[var(--background-modifier-form-field)];
+}
+
+/* ── Connection Status ───────────────────────────────────────────────────── */
+
+.connection-status {
+  @apply flex items-center;
+}
+
+.status-indicator {
+  @apply leading-none text-[10px];
+}
+
+.status-connected {
+  color: var(--color-green);
+}
+
+.status-disconnected {
+  @apply text-[var(--text-faint)];
+}
+
+/* ── Context Bar ─────────────────────────────────────────────────────────── */
+
+.claude-context-bar {
+  @apply flex items-center flex-wrap gap-1.5
+         bg-[var(--background-secondary)]
+         border-b border-[var(--background-modifier-border)]
+         text-[11px];
+  padding: 6px 10px;
+}
+
+.claude-context-bar.hidden {
+  @apply hidden;
+}
+
+.context-label {
+  @apply font-semibold uppercase tracking-wider shrink-0
+         text-[10px] text-[var(--text-muted)];
+}
+
+.context-items {
+  @apply flex flex-wrap gap-1;
+}
+
+.context-chip {
+  @apply inline-flex items-center gap-1 rounded-full cursor-pointer
+         text-xs border-none text-claude bg-claude/12
+         transition-all duration-150;
+  padding: 2px 8px;
+}
+
+.context-chip:hover {
+  @apply bg-claude/22;
+}
+
+.context-chip.is-disabled {
+  @apply opacity-40 line-through;
+}
+
+.context-chip.is-summary {
+  background: color-mix(in srgb, var(--color-yellow) 14%, transparent);
+  color: var(--color-yellow);
+}
+
+.context-chip-meta {
+  @apply opacity-60 text-[10px];
+}
+
+.context-meta {
+  @apply ml-auto shrink-0 text-[var(--text-faint)] text-[10px];
+}
+
+/* ── Chat History ────────────────────────────────────────────────────────── */
+
+.claude-chat-history {
+  @apply flex-1 overflow-y-auto;
+  padding: 16px 14px;
+  scroll-behavior: smooth;
+}
+
+/* ── Chat Messages ───────────────────────────────────────────────────────── */
+
+.claude-chat-message {
+  @apply relative mb-3 rounded-xl transition-all duration-200;
+  padding: 10px 14px;
+}
+
+.claude-chat-user {
+  @apply bg-claude/5 border border-claude/12;
+  border-left: 3px solid var(--color-claude);
+  border-radius: 4px 12px 12px 4px;
+}
+
+.claude-chat-assistant {
+  @apply bg-[var(--background-secondary)]
+         border border-[var(--background-modifier-border)];
+  border-radius: 12px 4px 4px 12px;
+}
+
+.claude-message-in-group {
+  @apply -mt-2 rounded-t-none border-t-0
+         bg-[var(--background-secondary)];
+}
+
+.claude-chat-error {
+  background: color-mix(in srgb, var(--color-red) 5%, var(--background-primary));
+  border: 1px solid color-mix(in srgb, var(--color-red) 15%, transparent);
+  border-left: 3px solid var(--color-red);
+  border-radius: 4px 12px 12px 4px;
+}
+
+.message-header {
+  @apply flex items-center gap-2 mb-1.5;
+}
+
+.sender-name {
+  @apply font-semibold uppercase tracking-widest
+         text-[9px];
+  color: var(--color-claude);
+}
+
+.claude-chat-user .sender-name {
+  color: var(--text-muted);
+}
+
+.message-time {
+  @apply text-[9px] text-[var(--text-faint)];
+}
+
+.message-content {
+  @apply text-[13px] leading-[1.65] text-[var(--text-normal)];
+}
+
+.message-content.markdown-rendered {
+  @apply select-text;
+}
+
+.message-content.markdown-rendered table,
+.message-content .markdown-rendered table {
+  @apply w-full text-xs;
+  display: table;
+  border-collapse: collapse;
+  margin: 10px 0;
+}
+
+.message-content.markdown-rendered th,
+.message-content.markdown-rendered td,
+.message-content .markdown-rendered th,
+.message-content .markdown-rendered td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.message-content.markdown-rendered thead,
+.message-content .markdown-rendered thead {
+  background: color-mix(in srgb, var(--background-modifier-hover) 55%, transparent);
+}
+
+.message-content-collapsible {
+  @apply flex flex-col items-start gap-2;
+}
+
+.message-content-collapsible-body {
+  @apply w-full;
+}
+
+.message-expand-toggle {
+  @apply inline-flex items-center gap-1 text-[11px] cursor-pointer
+         border-none rounded-md bg-transparent text-[var(--text-muted)]
+         transition-all duration-150;
+  padding: 2px 8px;
+}
+
+.message-expand-toggle:hover {
+  @apply text-claude;
+  background: color-mix(in srgb, var(--color-claude) 8%, transparent);
+}
+
+/* ── Streaming ───────────────────────────────────────────────────────────── */
+
+.streaming-indicator {
+  @apply text-[11px] flex items-center gap-1.5 font-medium text-claude;
+}
+
+.streaming-indicator::before {
+  @apply inline-block size-1.5 rounded-full;
+  content: "";
+  background: currentColor;
+  animation: pulse-dot 0.8s infinite alternate;
+}
+
+.streaming-text {
+  overflow-wrap: break-word;
+}
+
+/* ── Copy Button ─────────────────────────────────────────────────────────── */
+
+.copy-button {
+  @apply absolute flex items-center justify-center border-none cursor-pointer
+         rounded-lg opacity-0 text-[var(--text-muted)] transition-all duration-200;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  background: color-mix(in srgb, var(--background-modifier-hover) 80%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.claude-chat-message:hover .copy-button {
+  @apply opacity-100;
+}
+
+.copy-button:hover {
+  @apply text-[var(--text-normal)];
+  background: var(--background-modifier-hover);
+}
+
+.copy-button.copied {
+  color: var(--color-green);
+}
+
+.copy-button svg {
+  @apply size-3;
+}
+
+/* ── Shared Meta Section (Thinking / Tool Calls / Plan) ────────────────── */
+
+.claude-thinking-container,
+.claude-tool-calls-container,
+.claude-plan-container {
+  @apply overflow-hidden transition-all duration-200
+         bg-[var(--background-secondary)];
+  border: 1px solid var(--background-modifier-border);
+}
+
+.claude-thinking-container.hidden,
+.claude-tool-calls-container.hidden,
+.claude-plan-container.hidden {
+  @apply hidden;
+}
+
+/* Stack adjacency: remove double borders between consecutive sections */
+.claude-thinking-container + .claude-tool-calls-container:not(.hidden),
+.claude-thinking-container + .claude-plan-container:not(.hidden),
+.claude-tool-calls-container:not(.hidden) + .claude-plan-container:not(.hidden) {
+  border-top: none;
+}
+
+/* ── Thinking Section ────────────────────────────────────────────────────── */
+
+.claude-thinking-container.collapsed .thinking-content {
+  @apply hidden;
+}
+
+.thinking-header {
+  @apply flex items-center gap-2 cursor-pointer select-none
+         text-[var(--text-muted)];
+  padding: 7px 12px;
+}
+
+.thinking-header:hover {
+  background: color-mix(in srgb, var(--color-claude) 6%, transparent);
+}
+
+.thinking-icon {
+  @apply flex items-center;
+}
+
+.thinking-icon svg {
+  @apply size-3.5 text-claude;
+}
+
+.thinking-title {
+  @apply flex-1 text-[11px] font-semibold uppercase tracking-wider
+         text-[var(--text-normal)];
+}
+
+.thinking-toggle {
+  @apply flex items-center justify-center border-none cursor-pointer
+         rounded bg-transparent text-[var(--text-muted)] p-0.5;
+}
+
+.thinking-toggle svg {
+  @apply size-3;
+}
+
+.thinking-content {
+  @apply text-[11px] leading-relaxed text-[var(--text-muted)]
+         overflow-y-auto;
+  font-family: var(--font-monospace);
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 6px 12px 10px;
+  max-height: 220px;
+}
+
+/* ── Plan Section ──────────────────────────────────────────────────────── */
+
+.claude-plan-container.collapsed .plan-entries {
+  @apply hidden;
+}
+
+.plan-header {
+  @apply flex items-center gap-2 cursor-pointer select-none
+         text-[var(--text-muted)];
+  padding: 7px 12px;
+}
+
+.plan-header:hover {
+  background: color-mix(in srgb, var(--color-claude) 6%, transparent);
+}
+
+.plan-header-icon {
+  @apply flex items-center;
+}
+
+.plan-header-icon svg {
+  @apply size-3.5 text-claude;
+}
+
+.plan-header-text {
+  @apply flex-1 text-[11px] font-semibold uppercase tracking-wider
+         text-[var(--text-normal)];
+}
+
+.plan-progress {
+  @apply text-[10px] font-semibold text-[var(--text-faint)]
+         tabular-nums;
+}
+
+.plan-toggle {
+  @apply flex items-center justify-center border-none cursor-pointer
+         rounded bg-transparent text-[var(--text-muted)] p-0.5;
+}
+
+.plan-toggle svg {
+  @apply size-3;
+}
+
+.plan-entries {
+  @apply flex flex-col;
+}
+
+.plan-entry {
+  @apply flex items-start gap-2.5;
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 5px 12px;
+}
+
+.plan-entry-indicator {
+  @apply flex items-center justify-center shrink-0 mt-px;
+}
+
+.plan-entry-indicator svg {
+  @apply size-3.5;
+}
+
+.plan-entry-pending .plan-entry-indicator svg {
+  @apply text-[var(--text-faint)];
+}
+
+.plan-entry-in_progress .plan-entry-indicator svg,
+.plan-entry-running .plan-entry-indicator svg {
+  color: var(--color-yellow);
+  animation: spin 1.5s linear infinite;
+}
+
+.plan-entry-completed .plan-entry-indicator svg,
+.plan-entry-done .plan-entry-indicator svg {
+  color: var(--color-green);
+}
+
+.plan-entry-text {
+  @apply text-xs leading-relaxed;
+}
+
+.plan-entry-pending .plan-entry-text {
+  @apply text-[var(--text-muted)];
+}
+
+.plan-entry-in_progress .plan-entry-text,
+.plan-entry-running .plan-entry-text {
+  @apply text-[var(--text-normal)] font-medium;
+}
+
+.plan-entry-completed .plan-entry-text,
+.plan-entry-done .plan-entry-text {
+  @apply text-[var(--text-faint)] line-through;
+}
+
+/* ── Inline Permission Prompt (above input) ────────────────────────────── */
+
+.claude-permission-prompt {
+  @apply flex flex-col gap-0
+         rounded-lg overflow-hidden
+         border border-[var(--background-modifier-border)]
+         bg-[var(--background-primary)];
+  margin-bottom: 6px;
+}
+
+.claude-permission-prompt.hidden {
+  @apply hidden;
+}
+
+.perm-prompt-desc {
+  @apply flex items-start gap-1.5 text-xs text-[var(--text-normal)];
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.perm-prompt-icon {
+  @apply flex items-center shrink-0;
+  margin-top: 1px;
+}
+
+.perm-prompt-icon svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-yellow);
+}
+
+.perm-prompt-option {
+  @apply flex items-center gap-2 w-full text-left text-xs
+         bg-transparent cursor-pointer;
+  padding: 6px 10px;
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  transition: background-color 0.1s;
+}
+
+.perm-prompt-option:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.perm-prompt-option:last-of-type {
+  border-bottom: none;
+}
+
+.perm-prompt-option-icon {
+  @apply flex items-center shrink-0;
+}
+
+.perm-prompt-option-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.perm-prompt-allow .perm-prompt-option-icon svg {
+  color: var(--color-green);
+}
+
+.perm-prompt-reject .perm-prompt-option-icon svg {
+  color: var(--color-red);
+}
+
+.perm-prompt-custom {
+  @apply flex items-center gap-1;
+  padding: 4px 6px 4px 10px;
+}
+
+.perm-prompt-custom-input {
+  @apply flex-1 text-xs bg-transparent border-none outline-none;
+  color: var(--text-normal);
+  padding: 4px 0;
+}
+
+.perm-prompt-custom-input::placeholder {
+  color: var(--text-faint);
+}
+
+.perm-prompt-custom-send {
+  @apply flex items-center justify-center shrink-0
+         bg-transparent border-none cursor-pointer rounded;
+  padding: 4px;
+  color: var(--text-muted);
+  transition: color 0.1s;
+}
+
+.perm-prompt-custom-send:hover {
+  color: var(--text-normal);
+}
+
+.perm-prompt-custom-send svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Tool Calls Section ──────────────────────────────────────────────────── */
+
+.claude-tool-calls-container.collapsed .tool-call-item,
+.claude-tool-calls-container.collapsed .tool-call-summary {
+  @apply hidden;
+}
+
+.tool-calls-header {
+  @apply flex items-center gap-2 cursor-pointer select-none
+         text-[var(--text-muted)];
+  padding: 7px 12px;
+}
+
+.tool-calls-header:hover {
+  background: color-mix(in srgb, var(--color-claude) 6%, transparent);
+}
+
+.tool-header-icon {
+  @apply flex items-center;
+}
+
+.tool-header-icon svg {
+  @apply size-3.5 text-claude;
+}
+
+.tool-header-text {
+  @apply flex-1 text-[11px] font-semibold uppercase tracking-wider
+         text-[var(--text-normal)];
+}
+
+.tool-calls-toggle {
+  @apply flex items-center justify-center border-none cursor-pointer
+         rounded bg-transparent text-[var(--text-muted)] p-0.5;
+}
+
+.tool-calls-toggle svg {
+  @apply size-3;
+}
+
+/* ── Tool Call Item ──────────────────────────────────────────────────────── */
+
+.tool-call-item {
+  @apply flex flex-col;
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 5px 12px;
+}
+
+.tool-call-header {
+  @apply flex items-center gap-2.5;
+}
+
+.tool-status {
+  @apply shrink-0 rounded-full;
+  width: 7px;
+  height: 7px;
+}
+
+.tool-status-running {
+  background: var(--color-yellow);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-yellow) 20%, transparent);
+  animation: pulse-dot 1.2s infinite alternate;
+}
+
+.tool-status-complete {
+  background: var(--color-green);
+}
+
+.tool-status-failed {
+  background: var(--color-red);
+}
+
+.tool-info {
+  @apply flex-1 min-w-0;
+}
+
+.tool-name {
+  @apply font-semibold uppercase tracking-wider truncate
+         text-[10px] text-[var(--text-normal)];
+}
+
+.tool-summary {
+  @apply truncate text-[10px] text-[var(--text-muted)];
+}
+
+.tool-status-text {
+  @apply shrink-0 font-bold uppercase tracking-tight
+         text-[9px] text-[var(--text-faint)];
+}
+
+.tool-call-details {
+  @apply mt-2;
+}
+
+.tool-result {
+  @apply text-[11px] rounded-md
+         bg-[var(--background-primary)] text-[var(--text-muted)]
+         border border-[var(--background-modifier-border)]
+         overflow-y-auto break-all;
+  font-family: var(--font-monospace);
+  padding: 6px 10px;
+  max-height: 150px;
+}
+
+.tool-call-summary {
+  @apply border-t border-[var(--background-modifier-border)]
+         text-[10px] text-[var(--text-muted)];
+  padding: 6px 12px;
+}
+
+/* ── Chat Meta Container ─────────────────────────────────────────────────── */
+
+.claude-chat-meta {
+  @apply flex flex-col mb-4;
+}
+
+.claude-meta-in-group {
+  @apply mb-0 border-b-0;
+}
+
+/* ── Button Container ────────────────────────────────────────────────────── */
+
+.claude-chat-button-container {
+  @apply flex items-center gap-2;
+}
+
+/* ── Modified Files Summary ──────────────────────────────────────────────── */
+
+.modified-files-summary {
+  @apply border-t border-[var(--background-modifier-border)]
+         text-[10px] text-[var(--text-muted)];
+  padding: 4px 10px;
+}
+
+/* ── Patch Modal ─────────────────────────────────────────────────────────── */
+
+.claude-patch-modal {
+  @apply flex flex-col gap-3;
+}
+
+.claude-patch-subtitle {
+  @apply text-sm text-[var(--text-muted)];
+}
+
+.claude-patch-diff {
+  @apply text-xs rounded overflow-auto
+         bg-[var(--background-primary)]
+         border border-[var(--background-modifier-border)];
+  font-family: var(--font-monospace);
+  padding: 10px;
+  max-height: 400px;
+}
+
+.claude-patch-editor {
+  @apply w-full text-xs rounded
+         bg-[var(--background-primary)]
+         border border-[var(--background-modifier-border)]
+         text-[var(--text-normal)];
+  font-family: var(--font-monospace);
+  padding: 10px;
+  min-height: 200px;
+  resize: vertical;
+}
+
+.claude-patch-actions {
+  @apply flex gap-2 justify-end;
+}
+
+/* ── Terminal Permission Modal ───────────────────────────────────────────── */
+
+.claude-terminal-modal {
+  @apply flex flex-col gap-3;
+}
+
+.claude-terminal-label {
+  @apply text-sm text-[var(--text-muted)];
+}
+
+.claude-terminal-command {
+  @apply text-xs rounded
+         bg-[var(--background-primary)]
+         border border-[var(--background-modifier-border)]
+         text-[var(--text-normal)] break-all;
+  font-family: var(--font-monospace);
+  padding: 8px 10px;
+}
+
+.claude-terminal-actions {
+  @apply flex gap-2 justify-end;
+}
+
+/* ── Cursor Question Modal ──────────────────────────────────────────────── */
+
+.cursor-question-modal {
+  @apply flex flex-col gap-4;
+}
+
+.cursor-question-section {
+  @apply flex flex-col gap-2;
+}
+
+.cursor-question-prompt {
+  @apply text-sm font-medium text-[var(--text-normal)];
+}
+
+.cursor-question-options {
+  @apply flex flex-col gap-2;
+}
+
+.cursor-question-option {
+  @apply flex items-start gap-2 text-sm cursor-pointer;
+  color: var(--text-normal);
+}
+
+.cursor-question-option input {
+  margin-top: 3px;
+}
+
+.cursor-question-actions {
+  @apply flex gap-2 justify-end;
+}
+
+/* ── Cursor Plan/Image Modal ────────────────────────────────────────────── */
+
+.cursor-plan-modal,
+.cursor-image-modal {
+  @apply flex flex-col gap-4;
+}
+
+.cursor-plan-overview,
+.cursor-image-description {
+  @apply text-sm leading-relaxed text-[var(--text-normal)];
+}
+
+.cursor-plan-content {
+  @apply text-xs rounded overflow-auto
+         bg-[var(--background-primary)]
+         border border-[var(--background-modifier-border)]
+         text-[var(--text-normal)];
+  font-family: var(--font-monospace);
+  padding: 10px;
+  max-height: 280px;
+  white-space: pre-wrap;
+}
+
+.cursor-plan-phases {
+  @apply flex flex-col gap-2;
+}
+
+.cursor-plan-section-title {
+  @apply text-xs font-semibold uppercase tracking-wider text-[var(--text-faint)];
+}
+
+.cursor-plan-phase {
+  @apply flex flex-col gap-1;
+}
+
+.cursor-plan-phase-name {
+  @apply text-sm font-medium text-[var(--text-normal)];
+}
+
+.cursor-plan-todo-list {
+  @apply m-0 pl-5 text-xs text-[var(--text-muted)];
+}
+
+.cursor-plan-actions {
+  @apply flex gap-2 justify-end;
+}
+
+.cursor-image-path-input {
+  @apply w-full text-sm rounded
+         bg-[var(--background-primary)]
+         border border-[var(--background-modifier-border)]
+         text-[var(--text-normal)];
+  padding: 8px 10px;
+}
+
+.cursor-image-refs {
+  @apply flex flex-col gap-2;
+}
+
+/* ── Chat Input Area ─────────────────────────────────────────────────────── */
+
+.claude-chat-input-wrapper {
+  @apply relative flex flex-col shrink-0;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 10px 12px;
+}
+
+.claude-chat-input-top {
+  @apply flex items-center flex-wrap gap-1 mb-1.5;
+}
+
+.claude-chat-input-top:empty {
+  @apply hidden mb-0;
+}
+
+.claude-chat-input-top-left {
+  @apply flex items-center gap-1.5 min-w-0 flex-1;
+}
+
+.claude-chat-input-top-right {
+  @apply flex items-center justify-end shrink-0 ml-auto;
+}
+
+.claude-chat-input {
+  @apply w-full text-sm leading-relaxed resize-y rounded-lg
+         bg-[var(--background-primary)] text-[var(--text-normal)]
+         transition-all duration-200;
+  border: 1.5px solid var(--background-modifier-border);
+  min-height: 76px;
+  max-height: 280px;
+  padding: 10px 12px;
+  font-family: inherit;
+}
+
+.claude-chat-input:focus {
+  @apply outline-none;
+  border-color: var(--color-claude);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-claude) 12%, transparent);
+}
+
+.claude-chat-input::placeholder {
+  @apply text-[var(--text-faint)] text-[13px];
+}
+
+/* ── Chat Footer ─────────────────────────────────────────────────────────── */
+
+.claude-chat-footer {
+  @apply flex items-center justify-between;
+  margin-top: 6px;
+}
+
+.claude-chat-footer-left {
+  @apply flex items-center gap-1.5 flex-wrap min-w-0;
+}
+
+.claude-chat-footer-right {
+  @apply flex items-center gap-2;
+}
+
+.claude-chat-model-container {
+  @apply flex items-center;
+}
+
+.claude-chat-control-group {
+  @apply inline-flex items-center gap-1.5;
+}
+
+.claude-chat-control-label {
+  @apply text-[10px] uppercase tracking-wider font-semibold text-[var(--text-faint)];
+}
+
+.claude-chat-model-select {
+  @apply text-[11px] rounded-md
+         bg-[var(--background-modifier-form-field)]
+         border border-[var(--background-modifier-border)]
+         text-[var(--text-muted)];
+  padding: 3px 6px;
+  max-width: 180px;
+}
+
+.claude-chat-file-button {
+  @apply inline-flex items-center gap-1 text-[11px] cursor-pointer
+         border-none rounded-md bg-transparent text-[var(--text-muted)]
+         transition-all duration-150;
+  padding: 4px 8px;
+}
+
+.claude-chat-file-button:hover {
+  @apply text-claude;
+  background: color-mix(in srgb, var(--color-claude) 8%, transparent);
+}
+
+.claude-chat-file-button-icon {
+  @apply flex items-center;
+}
+
+.claude-chat-file-button-icon svg {
+  @apply size-3.5;
+}
+
+.claude-chat-file-button-label {
+  @apply text-[11px];
+}
+
+/* ── Send Button ─────────────────────────────────────────────────────────── */
+
+.claude-send-button {
+  @apply flex items-center justify-center border-none cursor-pointer
+         font-semibold text-[13px]
+         bg-claude text-white
+         transition-all duration-150;
+  padding: 6px 16px;
+  border-radius: 10px;
+}
+
+.claude-send-button:hover {
+  @apply bg-claude-hover;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-claude) 30%, transparent);
+}
+
+.claude-send-button:active {
+  @apply scale-[0.97];
+}
+
+.claude-send-button.loading {
+  @apply gap-1.5;
+}
+
+.button-spinner {
+  @apply inline-block size-3 rounded-full border-2 border-white/30 border-t-white;
+  animation: spin 0.6s linear infinite;
+}
+
+.button-text {
+  @apply text-[13px];
+}
+
+/* ── Activity Indicator ──────────────────────────────────────────────────── */
+
+.claude-activity-indicator {
+  @apply flex items-center gap-1.5 text-[11px] font-medium text-claude;
+}
+
+.claude-activity-indicator.hidden {
+  @apply hidden;
+}
+
+.activity-icon {
+  @apply text-sm text-claude;
+  animation: spin 2s linear infinite;
+}
+
+.activity-text {
+  @apply text-[11px];
+}
+
+/* ── File Chip ───────────────────────────────────────────────────────────── */
+
+.claudian-file-chip {
+  @apply inline-flex items-center gap-1.5 rounded-full
+         text-[12px] text-claude bg-claude/10
+         border border-claude/20;
+  padding: 3px 10px 3px 8px;
+}
+
+.claudian-file-chip.hidden {
+  @apply hidden;
+}
+
+.claudian-file-chip-icon {
+  @apply flex items-center;
+}
+
+.claudian-file-chip-icon svg {
+  @apply size-3;
+}
+
+.claudian-file-chip-name {
+  @apply text-xs truncate;
+  max-width: 180px;
+}
+
+.claudian-file-chip-remove {
+  @apply cursor-pointer border-none text-xs font-bold
+         bg-transparent text-claude opacity-60
+         transition-opacity duration-150;
+  padding: 0 2px;
+}
+
+.claudian-file-chip-remove:hover {
+  @apply opacity-100;
+}
+
+/* ── Mention Menu ────────────────────────────────────────────────────────── */
+
+.claude-chat-input-body {
+  @apply relative flex flex-col;
+}
+
+.claude-mention-menu {
+  @apply rounded-md overflow-hidden overflow-y-auto z-10
+         bg-[var(--background-primary)]
+         border border-[var(--background-modifier-border)]
+         shadow-lg;
+  max-height: 200px;
+  margin-bottom: 4px;
+}
+
+.claude-mention-menu.hidden {
+  @apply hidden;
+}
+
+.claude-mention-item {
+  @apply text-xs cursor-pointer
+         text-[var(--text-normal)]
+         transition-colors duration-100;
+  padding: 6px 10px;
+}
+
+.claude-mention-item:hover,
+.claude-mention-item.is-selected {
+  @apply bg-claude/12 text-claude;
+}
+
+/* ── Edit Dialog ─────────────────────────────────────────────────────────── */
+
+.edit-dialog {
+  @apply flex flex-col gap-3;
+}
+
+.dialog-buttons {
+  @apply flex gap-2 justify-end;
+}
+
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes pulse-dot {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes pulse-fade {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
