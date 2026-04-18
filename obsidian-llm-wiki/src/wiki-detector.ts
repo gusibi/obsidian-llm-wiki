@@ -108,8 +108,8 @@ export class WikiDetector {
   detect(): WikiStatus {
     const claudeMdPath = this.resolve("CLAUDE.md");
     const wikiDirPath = this.resolve("wiki");
-    const indexMdPath = this.resolve("index.md");
-    const logMdPath = this.resolve("log.md");
+    const indexMdPath = this.resolve("wiki/indexes/index.md");
+    const logMdPath = this.resolve("wiki/indexes/log.md");
     const legacyDirPath = this.resolve("legacy");
     const rawDirPath = this.resolve("raw");
 
@@ -149,7 +149,7 @@ export class WikiDetector {
   }
 
   async getIndexContent(): Promise<string | null> {
-    const path = this.resolve("index.md");
+    const path = this.resolve("wiki/indexes/index.md");
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile)) {
       return null;

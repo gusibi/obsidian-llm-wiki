@@ -12,11 +12,12 @@ raw/             → Immutable source of truth. You read from here but NEVER wri
 {{RAW_SUBDIRS}}
 wiki/            → YOU OWN THIS. All generated pages live here.
 {{WIKI_SUBDIRS}}
+  indexes/       → Meta files. All indexes and logs live here:
+    index.md         → Master catalog of all wiki pages
+    log.md           → Append-only slim operation timeline. Read with tail, not full load
+    lint-report.md   → Latest lint report (overwritten each run)
+    legacy-index.md  → Scan of the legacy archive (path, title, summary, tags, quality)
 legacy/          → Historical archive. Read-only. Only ingest when human explicitly moves files to raw/.
-legacy-index.md  → Your scan of the legacy archive (path, title, summary, tags, quality).
-index.md         → Master catalog of all wiki pages.
-log.md           → Append-only slim operation timeline. Read with tail, not full load.
-wiki/lint-report.md → Latest lint report (overwritten each run).
 ```
 
 ## Ownership Rules
@@ -26,10 +27,8 @@ wiki/lint-report.md → Latest lint report (overwritten each run).
 | `drafts/` | Human only | Human only |
 | `raw/` | Human only | You (read-only) |
 | `wiki/` | You only | Both |
+| `wiki/indexes/` | You only | Both |
 | `legacy/` | Nobody (frozen) | Both (read-only) |
-| `index.md` | You only | Both |
-| `log.md` | You only | Both |
-| `legacy-index.md` | You only | Both |
 
 ## Wiki Page Conventions
 
@@ -67,10 +66,10 @@ The wiki's core value is traceable knowledge. Every piece of information should 
 
 **Summary pages**: One-to-one mapping with raw files. Sources field points to the corresponding raw source. **Filename must use English kebab-case (e.g. `transformer-architecture.md`) and must NOT be the same as the raw source filename** — derive a descriptive English name from the content's topic.
 
-**Concept / Entity pages**: Synthesize information from multiple sources. Rules:
+**Concept / Entity / Method pages**: Synthesize information from multiple sources. Rules:
 1. Frontmatter `sources` lists all raw files that contributed content (filename only)
 2. In the body text, each section from a specific source includes inline attribution: `(source: [[actual-summary-filename]])`
-3. On every ingest that updates an existing concept/entity page, append to the sources field and attribute new content in the body
+3. On every ingest that updates an existing concept/entity/method page, append to the sources field and attribute new content in the body
 
 **Critical: Citations must use the actual filename of the file you created.** Do not fabricate or guess filenames. Do not add prefixes like `summary-` or `concept-` unless the file is actually named that way. Before writing a citation, confirm what filename you actually created/used in this ingest, then use that exact name.
 
@@ -122,35 +121,135 @@ Note:
 Triggered when the human adds a file to `raw/` and asks you to process it.
 
 Steps:
-1. Read the source file completely.
-2. Discuss key takeaways with the human — what's important, what's surprising, what connects to existing knowledge. This is the human's key opportunity to steer direction.
-3. After reaching consensus, execute all remaining steps in one pass (no further confirmations):
+1. Read the source file completely and skim `wiki/indexes/index.md` to see what already exists.
+2. **Propose a concrete plan (do not ask open questions).** Give the human a short list they can approve / reject / tweak in one reply:
+   - Proposed summary filename (1).
+   - Concept pages to create or update (name + one-line reason each).
+   - Entity pages to create or update (name + one-line reason each).
+   - Whether to extract a method page (default: no; say yes only when all three hard preconditions and the five-question self-check pass, and cite why).
+   - Risks: potential duplicates, contradictions with existing pages, or points you're unsure about (at most 2).
+
+   Constraints:
+   - Every item carries your judgment and reason. Never push a decision back with an open question (wrong: "Should we create an entity page for X?"; right: "Propose creating entity page X because…").
+   - When unsure, pick the most reasonable default and mark it `(tentative)`. Do not list multiple options for the human to choose from.
+   - Keep the whole plan under 10 lines.
+   - Wait for a one-line confirmation ("go" / "change X" / "skip Y"). Do not engage in open-ended discussion.
+3. Once the human confirms or adjusts, execute all remaining steps in one pass (no further confirmations):
    a. Create a summary page in `wiki/summaries/`. Include: one-paragraph overview, key points as bullet list, notable quotes (with attribution), and connections to existing wiki pages.
    b. Update or create relevant concept pages in `wiki/concepts/`. New content must include inline attribution `(source: [[actual-summary-filename]])` — use the EXACT filename you created in step a. If updating an existing page, append to the frontmatter sources field.
    c. Update or create relevant entity pages in `wiki/entities/`. Same attribution rules. Note: do NOT create entity pages for article authors who are not publicly well-known figures — record author info in the summary's frontmatter `author` field instead.
-   d. Add cross-references: update any existing wiki pages that should now link to the new content.
-   e. Check for contradictions: if the new source contradicts existing wiki content, flag it explicitly on the relevant pages with a `> [!warning]` callout.
-   f. Update `index.md` — add new pages, update summaries and source counts of modified pages.
-   g. Append to `log.md`.
-4. Append to `log.md` (slim format — don't list individual filenames, that info is already in `index.md`):
+   d. **Extract methodologies**: Run the three hard preconditions AND the five-question self-check below against each candidate. Only when ALL three preconditions hold AND all five self-check answers are YES, update or create a page in `wiki/methods/`. Use the required skeleton; do NOT copy paragraphs from concept pages. If any check fails, skip — it is better to have zero method pages than to clone concept pages into methods.
+   e. Add cross-references: update any existing wiki pages that should now link to the new content.
+   f. Check for contradictions: if the new source contradicts existing wiki content, flag it explicitly on the relevant pages with a `> [!warning]` callout.
+   g. Update `wiki/indexes/index.md` — add new pages, update summaries and source counts of modified pages.
+   h. Append to `wiki/indexes/log.md`.
+4. Append to `wiki/indexes/log.md` (slim format — don't list individual filenames, that info is already in index.md):
    ```
    ## [YYYY-MM-DD] ingest | Source Title
    - Source: [[source-filename]]
-   - Impact: N summaries created, N concepts updated, N entities created
+   - Impact: N summaries created, N concepts updated, N entities created, N methods created/updated
    - Key insight: one sentence summary of what this source adds to the wiki
    ```
+
+### Method vs Concept: Clear Division
+
+This is the pair most likely to blur. For the same topic (e.g. "Harness Engineering"):
+
+| Content | concept | method |
+|---------|---------|--------|
+| What X is, definition | ✅ | ❌ |
+| What problem X solves, why it matters | ✅ | ❌ |
+| Origin, evolution, debates | ✅ | ❌ |
+| Relation to adjacent concepts | ✅ | ❌ |
+| The N steps to build X (Constrain/Inform/Verify/Correct) | ❌ | ✅ |
+| Checklist to judge whether X is sufficient | ❌ | ✅ |
+| Decision rules ("when to swap the model vs when to fix the harness") | ❌ | ✅ |
+
+**Hard constraints**:
+
+1. **No duplication between concept and method.** A concept page needing to mention a process writes one line + `(see [[method-page]])`; a method page needing background writes one line + `(background: [[concept-page]])`. Never copy paragraphs across.
+2. **A method page cannot be a concept page in disguise.** If, after removing cross-reference sentences, a method page overlaps >30% with the matching concept page, the method page has no real methodology — delete it.
+3. **Method page section headings must be imperatives or rules**, not noun definitions. Sections like "Definition / Background / Significance" are FORBIDDEN in method pages.
+
+### Hard Preconditions for a Method Page
+
+A snippet qualifies for `wiki/methods/` only when it satisfies ALL THREE:
+
+1. **Executable** — the reader can act on it without understanding background. "Do X; if Y, do Z", not "X matters".
+2. **Transferable** — the steps work beyond the source's specific scenario. Manuals for a particular product/project do NOT qualify (they belong in the summary).
+3. **Non-trivial** — at least one step, rule, or anti-pattern is non-obvious. "Test before deploy" is common sense and does NOT count.
+
+Miss any one → do not create a method page. Editorial remarks like "X is important" or "watch out for Y" are NOT methodologies.
+
+### Required Method Page Skeleton
+
+Every method page MUST use this skeleton. Drop sections with no content rather than leaving them empty or padding them:
+
+```markdown
+---
+title: method name (verb-first or "how to X")
+tags: [method, ...]
+sources:
+  - "[[raw-file-1]]"
+created: {{DATE}}
+updated: {{DATE}}
+---
+
+## When to use
+One or two sentences on the situation that calls for this method. Not a definition.
+
+## Steps / Rules
+Numbered. Each item is an imperative or conditional rule:
+1. Do X
+2. If Y, do Z; otherwise do W
+
+## Anti-patterns
+Common misuses, one line each.
+
+## Boundaries
+When this method fails or should not be used.
+
+## Related
+- Background: [[concept-page]]
+- Related methods: [[another-method]]
+```
+
+At least one of "Steps / Rules" and "Anti-patterns" must be non-empty, or it isn't a methodology.
+
+### Naming
+
+Method filenames should read as actions, not things:
+
+- Good: `review-pr-before-merge.md`, `choose-rag-vs-fine-tuning.md`, `write-claude-md.md`
+- Bad: `harness-engineering.md` (that's a concept), `rag.md` (that's a technique/concept)
+
+If the name also works under `wiki/concepts/`, you're filing in the wrong place.
+
+### Pre-write Self-check
+
+Before creating or updating a method page, answer YES to ALL of:
+
+1. Can the reader DO something after reading this (not just learn a word)?
+2. After removing every "what / why" sentence, is there still content left?
+3. Do the steps work beyond the source's specific scenario?
+4. Is at least one item non-obvious?
+5. Does `wiki/concepts/` already have a page on this topic? If yes, is the boundary with that concept page clear (see the division table above)?
+
+### Updating Existing Method Pages
+
+Check `wiki/methods/` first. If a similar method exists, merge into it and append sources. When merging, still obey the skeleton — do not paste the new source's background prose.
 
 ### Query
 
 Triggered when the human asks a question.
 
 Steps:
-1. Read `index.md` to find relevant wiki pages.
+1. Read `wiki/indexes/index.md` to find relevant wiki pages.
 2. Read the relevant pages.
 3. If wiki pages are insufficient, check `raw/` sources directly as fallback.
 4. Synthesize an answer with citations to specific wiki pages: `(see [[page-name]])`.
-5. If the answer is substantial and reusable, ask the human if it should be filed as a new page in `wiki/analysis/` or `wiki/comparisons/`.
-6. If filed, update `index.md` and append to `log.md`:
+5. If the answer is substantial and reusable, ask the human if it should be filed as a new page in `wiki/analysis/`, `wiki/comparisons/`, or `wiki/methods/` (methodology-style answers belong in methods/).
+6. If filed, update `wiki/indexes/index.md` and append to `wiki/indexes/log.md`:
    ```
    ## [YYYY-MM-DD] query → filed | Question summary
    - Filed as: [[actual-filename]]
@@ -170,12 +269,18 @@ Check for:
 - **Orphan pages**: wiki pages with no inbound links from other pages.
 - **Missing pages**: important concepts mentioned in wiki text but lacking their own page.
 - **Missing cross-references**: pages that should link to each other but don't.
-- **Missing attribution**: content paragraphs in concept/entity pages without source attribution.
+- **Missing attribution**: content paragraphs in concept/entity/method pages without source attribution.
 - **Gaps & suggestions**: topics where knowledge is thin, with suggested search directions or material types to look for.
+- **Method quality**: audit every page in `wiki/methods/` against "Method vs Concept", "Hard Preconditions", and the required skeleton:
+  - Overlaps a concept page by >30% → fold the overlap back into the concept, keep only steps/rules in the method page; delete the method page if nothing distinctive remains
+  - Fails any of the three hard preconditions (executable / transferable / non-trivial) → delete
+  - Missing the "When to use / Steps / Anti-patterns / Boundaries" structure, or contains "Definition / Background / Significance" sections → rewrite to the skeleton or delete
+  - Filename reads like a noun/concept instead of an action → rename or move back to concepts
+  - Patterns recurring across summaries without a method page → suggest one
 
-Write the full report to `wiki/lint-report.md` (overwrite — only keep the latest). **Actively fix** what you can (including merging duplicate pages and renaming bad filenames), and suggest actions for the rest. Historical reports are preserved via git history.
+Write the full report to `wiki/indexes/lint-report.md` (overwrite — only keep the latest). **Actively fix** what you can (including merging duplicate pages and renaming bad filenames), and suggest actions for the rest. Historical reports are preserved via git history.
 
-Append a slim summary to `log.md`:
+Append a slim summary to `wiki/indexes/log.md`:
 ```
 ## [YYYY-MM-DD] lint | Wiki health check
 - Pages scanned: N
@@ -190,7 +295,7 @@ Triggered when the human asks you to scan the legacy archive.
 Steps:
 1. List all files in `legacy/`.
 2. For each file, read only the title (first heading) and first 10 lines.
-3. Generate or update `legacy-index.md` with a table:
+3. Generate or update `wiki/indexes/legacy-index.md` with a table:
 
 ```markdown
 | Path | Title | Summary | Tags | Quality | Wiki Relevance |
@@ -198,13 +303,13 @@ Steps:
 | legacy/file.md | Title | One sentence | tag1, tag2 | High/Med/Low | Related to [[concept]] |
 ```
 
-4. Append to `log.md`.
+4. Append to `wiki/indexes/log.md`.
 
 Do NOT read full file contents during a scan. The point is a lightweight overview, not full ingest.
 
 ## Index Format
 
-`index.md` is organized by page type:
+`wiki/indexes/index.md` is organized by page type:
 
 ```markdown
 # Wiki Index
@@ -217,6 +322,9 @@ Do NOT read full file contents during a scan. The point is a lightweight overvie
 
 ## Entities
 - [[entity-name]] — One-line description (N sources)
+
+## Methods
+- [[method-name]] — One-line description (N sources)
 
 ## Comparisons
 - [[comparison-name]] — One-line description
@@ -236,14 +344,14 @@ This rule applies everywhere: frontmatter sources, body citations, index.md, log
 
 ## Reading log.md
 
-`log.md` is a slim operation timeline, but it grows over time. **Do not load it fully** — use tail to get recent entries:
+`wiki/indexes/log.md` is a slim operation timeline, but it grows over time. **Do not load it fully** — use tail to get recent entries:
 
 ```bash
 # Last 5 operation titles
-grep "^## \[" log.md | tail -5
+grep "^## \[" wiki/indexes/log.md | tail -5
 
 # Last 30 lines of detail
-tail -30 log.md
+tail -30 wiki/indexes/log.md
 ```
 
 Only read further back when you need to trace a specific historical operation.
@@ -251,13 +359,14 @@ Only read further back when you need to trace a specific historical operation.
 ## Important Rules
 
 1. **Never modify `raw/` or `legacy/` or `drafts/`.** Raw is immutable source of truth, legacy is frozen archive, drafts is human-owned. No moving, renaming, modifying, or deleting.
-2. **Always update `index.md` and `log.md`** after any operation that changes wiki content.
+2. **Always update `wiki/indexes/index.md` and `wiki/indexes/log.md`** after any operation that changes wiki content.
 3. **All wikilinks use only filenames, never paths.** This includes sources fields, body citations, index.md and log.md references.
 4. **Always include frontmatter** on wiki pages.
 5. **Flag contradictions explicitly** — don't silently overwrite old claims.
 6. **Prefer updating existing pages over creating new ones** when the topic already has a page. Before creating, check if a synonymous or near-synonymous page already exists (e.g. `hooks` and `hooks-claude-code` are the same concept) — merge into the existing page instead.
-7. **Every content section in concept/entity pages must attribute its source**, ensuring knowledge traceability. **Citations must use the actual filename of the created file** — do not fabricate or guess. Verify before writing.
-8. **Ask before filing query answers** as wiki pages — the human decides what's worth keeping.
-9. **One ingest at a time** unless the human explicitly asks for batch processing.
-10. **Ingest: discuss first, then execute** — discuss key takeaways with the human first, then complete all file operations in one pass after consensus.
-11. **Slim log principle**: ingest logs record Source + Impact numbers + Key insight (no full filename lists); only filed queries are logged; lint logs only a summary line with full report in `wiki/lint-report.md`.
+7. **Every content section in concept/entity/method pages must attribute its source**, ensuring knowledge traceability. **Citations must use the actual filename of the created file** — do not fabricate or guess. Verify before writing.
+8. **Strict division between methods and concepts**: `wiki/methods/` holds only steps / rules / anti-patterns (the "how"); `wiki/concepts/` holds only definitions / background / reasons (the "what"). The same content must never appear in both. Before creating a method page, pass the three hard preconditions AND the five-question self-check; any failure means do not create. A missing method page is fine; a concept page copy-pasted into methods is not.
+9. **Ask before filing query answers** as wiki pages — the human decides what's worth keeping.
+10. **One ingest at a time** unless the human explicitly asks for batch processing.
+11. **Ingest: propose, then execute** — give a concrete plan (summary name, concept/entity/method pages to create or update, risks) with your reasoning, let the human approve or adjust in one line, then complete all file operations in one pass. **Never push a decision back as an open-ended question** — always lead with your best default and its reason.
+12. **Slim log principle**: ingest logs record Source + Impact numbers + Key insight (no full filename lists); only filed queries are logged; lint logs only a summary line with full report in `wiki/indexes/lint-report.md`.

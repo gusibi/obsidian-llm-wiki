@@ -19,8 +19,7 @@ import { ClaudeACPSettings, TerminalPolicy } from "./settings";
 export type PermissionHandler = (request: {
   toolName: string;
   description: string;
-  allowId: string;
-  rejectId: string;
+  options: { optionId: string; name?: string; kind?: string }[];
 }) => Promise<string>;
 
 export class ACPClient {
@@ -423,18 +422,12 @@ export class ACPClient {
 
       console.log(`Claude ACP: Permission requested for tool: ${toolName}`);
 
-      const allowOption =
-        options?.find((opt: any) => opt.optionId === "allow_always") ||
-        options?.find((opt: any) => opt.optionId === "allow");
-      const rejectOption = options?.find(
-        (opt: any) =>
-          opt.optionId === "reject" || opt.optionId === "deny",
-      );
+      const normalizedOptions = options && options.length > 0 ? options : [
+        { optionId: "allow", name: "Allow", kind: "allow" },
+        { optionId: "reject", name: "Reject", kind: "reject" }
+      ];
 
-      const decision = await this.promptPermission(toolName, description, {
-        allowId: allowOption?.optionId || "allow",
-        rejectId: rejectOption?.optionId || "reject",
-      });
+      const decision = await this.promptPermission(toolName, description, normalizedOptions);
 
       console.log("Claude ACP: Permission decision:", decision);
 
@@ -461,17 +454,16 @@ export class ACPClient {
   private promptPermission(
     toolName: string,
     description: string,
-    ids: { allowId: string; rejectId: string },
+    options: { optionId: string; name?: string; kind?: string }[],
   ): Promise<string> {
     if (this.permissionHandler) {
       return this.permissionHandler({
         toolName,
         description,
-        allowId: ids.allowId,
-        rejectId: ids.rejectId,
+        options,
       });
     }
-    return Promise.resolve(ids.allowId);
+    return Promise.resolve(options[0]?.optionId || "allow");
   }
 
   private createErrorResponse(

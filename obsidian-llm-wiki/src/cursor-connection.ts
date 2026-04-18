@@ -4,7 +4,13 @@ import * as os from "os";
 import * as path from "path";
 import { App, Notice } from "obsidian";
 import { ACPClient } from "./acp-client";
-import { ACPModelOption } from "./agent-connection";
+import {
+  ACPConfigOption,
+  ACPModelOption,
+  parseAvailableModels,
+  parseConfigOptions,
+  parseCurrentModelId,
+} from "./agent-connection";
 import { promptCursorImageGeneration } from "./cursor-image-modal";
 import { promptCursorPlan } from "./cursor-plan-modal";
 import {
@@ -23,12 +29,17 @@ export class CursorAgentConnection {
   private settingsProvider: () => ClaudeACPSettings;
   private messageHandlers: Map<string, (response: ACPResponse) => void> =
     new Map();
+  private messageRejectors: Map<string, (error: Error) => void> = new Map();
   private messageId = 0;
   private currentSessionId: string | null = null;
+  private activePromptRequestId: string | null = null;
   private availableModels: ACPModelOption[] = [];
   private currentModelId: string | null = null;
   private currentModeId: string | null = null;
+  private configOptions: ACPConfigOption[] = [];
   private modelListeners: Set<(models: ACPModelOption[]) => void> = new Set();
+  private configListeners: Set<(options: ACPConfigOption[]) => void> =
+    new Set();
   private updateHandlers: ((update: any) => void)[] = [];
   // No chat timeout — tasks may run for hours
   private stdoutBuffer = "";
@@ -132,41 +143,39 @@ export class CursorAgentConnection {
   }
 
   private updateModelsFromResponse(result: any) {
-    const models = result?.models;
-    if (!models) return;
-    const available = Array.isArray(models.availableModels)
-      ? models.availableModels
-      : [];
-    if (available.length > 0) {
-      this.availableModels = available.map((model: any) => ({
-        id: model.modelId || model.id || model.name,
-        name:
-          model.displayName ||
-          model.name ||
-          model.label ||
-          model.modelId ||
-          model.id,
-        displayName: model.displayName || model.label || model.name,
-        provider: model.provider || model.vendor,
-        description: model.description,
-        effort:
-          model.effort ||
-          model.reasoningEffort ||
-          model.thinking ||
-          model.reasoning,
-      }));
+    const parsed = parseAvailableModels(result);
+    const current = parseCurrentModelId(result);
+    let changed = false;
+    if (parsed.length > 0) {
+      this.availableModels = parsed;
+      changed = true;
     }
-    if (models.currentModelId) {
-      this.currentModelId = models.currentModelId;
+    if (current) {
+      this.currentModelId = current;
+      changed = true;
     }
-    if (available.length > 0 || models.currentModelId) {
+    if (changed) {
       this.notifyModelListeners();
     }
+  }
+
+  private updateConfigOptionsFromResponse(result: any) {
+    const parsed = parseConfigOptions(result);
+    if (parsed.length === 0) return;
+    this.configOptions = parsed;
+    this.notifyConfigListeners();
   }
 
   private notifyModelListeners() {
     const snapshot = [...this.availableModels];
     for (const handler of this.modelListeners) {
+      handler(snapshot);
+    }
+  }
+
+  private notifyConfigListeners() {
+    const snapshot = [...this.configOptions];
+    for (const handler of this.configListeners) {
       handler(snapshot);
     }
   }
@@ -227,10 +236,18 @@ export class CursorAgentConnection {
 
         this.cursorProcess.on("error", (error: any) => {
           console.error("Cursor ACP: Process error:", error);
+          this.rejectAllPendingMessages(
+            new Error(`Cursor Agent process error: ${error?.message || String(error)}`),
+          );
           resolve(false);
         });
 
         this.cursorProcess.on("exit", (code, signal) => {
+          this.rejectAllPendingMessages(
+            new Error(
+              `Cursor Agent process exited${code !== null ? ` with code ${code}` : ""}${signal ? ` (${signal})` : ""}`,
+            ),
+          );
           if (code !== 0) {
             resolve(false);
           }
@@ -343,10 +360,11 @@ export class CursorAgentConnection {
       }
 
       if (message.id && this.messageHandlers.has(message.id.toString())) {
-        const handler = this.messageHandlers.get(message.id.toString());
+        const messageId = message.id.toString();
+        const handler = this.messageHandlers.get(messageId);
         if (handler) {
           handler(message);
-          this.messageHandlers.delete(message.id.toString());
+          this.clearPendingMessage(messageId);
         }
       } else if (message.method === "session/update") {
         this.handleSessionUpdate(message);
@@ -366,8 +384,25 @@ export class CursorAgentConnection {
       if (modeId) {
         this.currentModeId = String(modeId);
       }
+      const sessionUpdate = params.update?.sessionUpdate;
+      if (
+        sessionUpdate === "current_model_update" ||
+        sessionUpdate === "available_models_update"
+      ) {
+        this.updateModelsFromResponse(params.update);
+      }
+      if (
+        sessionUpdate === "config_options_update" ||
+        sessionUpdate === "current_config_update"
+      ) {
+        this.updateConfigOptionsFromResponse(params.update);
+      }
       if (this.isDebugLoggingEnabled()) {
-        console.log("Cursor ACP session/update:", params.update);
+        const timestamp = new Date().toISOString();
+        console.log(
+          `[${timestamp}] [Cursor ACP] session/update:`,
+          params.update,
+        );
       }
       for (const handler of this.updateHandlers) {
         handler(params.update);
@@ -424,7 +459,8 @@ export class CursorAgentConnection {
         const approved =
           !response.error &&
           response.result?.outcome?.optionId !== "reject" &&
-          response.result?.outcome?.optionId !== "deny";
+          response.result?.outcome?.optionId !== "deny" &&
+          response.result?.outcome?.optionId !== "cancel";
         for (const handler of this.updateHandlers) {
           handler({
             sessionUpdate: "permission_result",
@@ -881,13 +917,20 @@ export class CursorAgentConnection {
   }
 
   async sendMessage(request: Partial<ACPRequest>): Promise<ACPResponse> {
-    return new Promise((resolve, reject) => {
+    const dispatched = this.dispatchMessage(request);
+    return dispatched.promise;
+  }
+
+  private dispatchMessage(
+    request: Partial<ACPRequest>,
+  ): { id: string; promise: Promise<ACPResponse> } {
+    const id = (++this.messageId).toString();
+    const promise = new Promise<ACPResponse>((resolve, reject) => {
       if (!this.cursorProcess?.stdin) {
         reject(new Error("Cursor Agent process not available"));
         return;
       }
 
-      const id = (++this.messageId).toString();
       const fullRequest: ACPRequest = {
         jsonrpc: "2.0",
         id,
@@ -898,9 +941,54 @@ export class CursorAgentConnection {
       this.messageHandlers.set(id, (response) => {
         resolve(response);
       });
+      this.messageRejectors.set(id, reject);
 
       this.cursorProcess.stdin.write(JSON.stringify(fullRequest) + "\n");
     });
+
+    return { id, promise };
+  }
+
+  private clearPendingMessage(id: string) {
+    this.messageHandlers.delete(id);
+    this.messageRejectors.delete(id);
+    if (this.activePromptRequestId === id) {
+      this.activePromptRequestId = null;
+    }
+  }
+
+  private rejectPendingMessage(id: string, error: Error) {
+    const reject = this.messageRejectors.get(id);
+    this.clearPendingMessage(id);
+    reject?.(error);
+  }
+
+  private rejectAllPendingMessages(error: Error) {
+    const pendingIds = [...this.messageRejectors.keys()];
+    for (const id of pendingIds) {
+      const reject = this.messageRejectors.get(id);
+      this.clearPendingMessage(id);
+      reject?.(error);
+    }
+  }
+
+  private createAbortError(): Error {
+    const error = new Error("Request cancelled");
+    error.name = "AbortError";
+    return error;
+  }
+
+  private sendNotification(method: string, params?: any): void {
+    if (!this.cursorProcess?.stdin) {
+      return;
+    }
+    this.cursorProcess.stdin.write(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        method,
+        params,
+      }) + "\n",
+    );
   }
 
   async createSession(): Promise<string> {
@@ -926,6 +1014,7 @@ export class CursorAgentConnection {
 
       const sessionId = response.result?.sessionId;
       this.updateModelsFromResponse(response.result);
+      this.updateConfigOptionsFromResponse(response.result);
       if (!sessionId) {
         throw new Error("Failed to create session: No session ID returned");
       }
@@ -947,10 +1036,14 @@ export class CursorAgentConnection {
       throw new Error("Cursor Agent not connected");
     }
 
+    const adapter = this.app.vault.adapter as any;
+    const basePath = adapter.basePath || process.cwd();
     const response = await this.sendMessage({
       method: "session/load",
       params: {
         sessionId,
+        cwd: basePath,
+        mcpServers: [],
       },
     });
 
@@ -960,6 +1053,7 @@ export class CursorAgentConnection {
 
     this.currentSessionId = sessionId;
     this.updateModelsFromResponse(response.result);
+    this.updateConfigOptionsFromResponse(response.result);
     if (response.result?.mode?.id || response.result?.currentModeId) {
       this.currentModeId = String(
         response.result?.mode?.id || response.result?.currentModeId,
@@ -1007,10 +1101,65 @@ export class CursorAgentConnection {
     this.notifyModelListeners();
   }
 
+  getConfigOptions(): ACPConfigOption[] {
+    return [...this.configOptions];
+  }
+
+  onConfigOptionsUpdated(
+    handler: (options: ACPConfigOption[]) => void,
+  ): () => void {
+    this.configListeners.add(handler);
+    if (this.configOptions.length > 0) {
+      handler([...this.configOptions]);
+    }
+    return () => {
+      this.configListeners.delete(handler);
+    };
+  }
+
+  async setSessionConfigOption(configId: string, value: string): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error("Cursor Agent not connected");
+    }
+    if (!this.currentSessionId) {
+      await this.createSession();
+    }
+    const response = await this.sendMessage({
+      method: "session/set_config_option",
+      params: {
+        sessionId: this.currentSessionId,
+        configId,
+        value,
+      },
+    });
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+    const existing = this.configOptions.find((opt) => opt.id === configId);
+    if (existing) {
+      existing.currentValue = value;
+    }
+    this.updateConfigOptionsFromResponse(response.result);
+    if (!response.result?.configOptions) {
+      this.notifyConfigListeners();
+    }
+  }
+
   async cancelCurrentPrompt(): Promise<void> {
-    if (!this.isConnected() || !this.currentSessionId) {
+    if (!this.isConnected()) {
       return;
     }
+
+    const activePromptRequestId = this.activePromptRequestId;
+    if (activePromptRequestId) {
+      this.sendNotification("$/cancelRequest", { id: activePromptRequestId });
+      this.rejectPendingMessage(activePromptRequestId, this.createAbortError());
+    }
+
+    if (!this.currentSessionId) {
+      return;
+    }
+
     const response = await this.sendMessage({
       method: "session/cancel",
       params: {
@@ -1055,7 +1204,7 @@ export class CursorAgentConnection {
         }
       });
 
-      this.sendMessage({
+      const promptRequest = this.dispatchMessage({
         method: "session/prompt",
         params: {
           sessionId: this.currentSessionId,
@@ -1066,7 +1215,10 @@ export class CursorAgentConnection {
             },
           ],
         },
-      })
+      });
+      this.activePromptRequestId = promptRequest.id;
+
+      promptRequest.promise
         .then((response) => {
           unregister();
           console.log("Cursor ACP: session/prompt completed", {
@@ -1124,6 +1276,11 @@ export class CursorAgentConnection {
       }
     });
 
+    const isLogFile = fullPath.toLowerCase().endsWith("log.md");
+    const editInstruction = isLogFile
+      ? `Please edit the file at: ${fullPath}\nInstruction: ${instruction}\n\nCRITICAL: Since this is a log file, you MUST read the file and append your new entries to the end. Do NOT use the replace tool for log.md. Rewrite the whole file with write_file including the new appended content.`
+      : `Please edit the file at: ${fullPath}\nInstruction: ${instruction}\n\nUse the file system tools to read the file, make the edits, and write it back.`;
+
     try {
       const response = await this.sendMessage({
         method: "session/prompt",
@@ -1132,7 +1289,7 @@ export class CursorAgentConnection {
           prompt: [
             {
               type: "text",
-              text: `Please edit the file at: ${fullPath}\nInstruction: ${instruction}\n\nUse the file system tools to read the file, make the edits, and write it back.`,
+              text: editInstruction,
             },
           ],
         },
@@ -1206,12 +1363,18 @@ export class CursorAgentConnection {
 
   disconnect(): void {
     this.currentSessionId = null;
+    this.activePromptRequestId = null;
     this.updateHandlers = [];
     this.stdoutBuffer = "";
     this.availableModels = [];
     this.currentModelId = null;
     this.currentModeId = null;
+    this.configOptions = [];
     this.modelListeners.clear();
+    this.configListeners.clear();
+    this.rejectAllPendingMessages(
+      new Error("Cursor Agent process disconnected"),
+    );
     if (this.cursorProcess && !this.cursorProcess.killed) {
       this.cursorProcess.kill("SIGTERM");
       this.cursorProcess = null;

@@ -14,6 +14,7 @@ export interface SessionRecord {
   title?: string;
   createdAt: string;
   updatedAt: string;
+  remoteSessionByProvider?: Record<string, string>;
 }
 
 export interface SessionSummary {
@@ -133,6 +134,36 @@ export class SessionStore {
 
     await this.writeSession(session);
     await this.setCurrentSessionId(session.id);
+  }
+
+  async setRemoteSessionId(
+    sessionId: string,
+    provider: string,
+    remoteSessionId: string,
+  ): Promise<void> {
+    await this.ensureSessionFolder();
+    const session = await this.loadSessionById(sessionId);
+    if (!session) {
+      return;
+    }
+    const nextMap = {
+      ...(session.remoteSessionByProvider || {}),
+      [provider]: remoteSessionId,
+    };
+    session.remoteSessionByProvider = nextMap;
+    session.updatedAt = new Date().toISOString();
+    await this.writeSession(session);
+  }
+
+  async getRemoteSessionId(
+    sessionId: string,
+    provider: string,
+  ): Promise<string | null> {
+    const session = await this.loadSessionById(sessionId);
+    if (!session) {
+      return null;
+    }
+    return session.remoteSessionByProvider?.[provider] || null;
   }
 
   async clearSession(sessionId?: string): Promise<void> {

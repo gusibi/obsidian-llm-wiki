@@ -51,8 +51,10 @@ description: >
 | `wiki/summaries/` | 每篇源文件的摘要 |
 | `wiki/concepts/` | 概念/主题页面（跨源综合） |
 | `wiki/entities/` | 人物/工具/框架/组织 |
+| `wiki/methods/` | **方法论**：可复用的流程、决策框架、最佳实践、反模式 |
 | `wiki/comparisons/` | 对比分析 |
 | `wiki/analysis/` | 深度探索（从提问中沉淀） |
+| `wiki/indexes/` | **元信息目录**：index.md、log.md、lint-report.md、legacy-index.md 统一放这里 |
 
 用户可以：
 - 增减 raw 子目录（比如不需要 `work/`，或想加 `research/`）
@@ -69,9 +71,11 @@ description: >
 ```bash
 mkdir -p drafts
 mkdir -p raw/{子目录列表}
-mkdir -p wiki/{页面类型列表}
-mkdir -p legacy          # 仅当用户需要时
+mkdir -p wiki/{页面类型列表}   # 默认含 summaries/ concepts/ entities/ methods/ comparisons/ analysis/ indexes/
+mkdir -p legacy                # 仅当用户需要时
 ```
+
+注意：`wiki/indexes/` 是必选目录，所有索引和日志文件（index.md、log.md、lint-report.md、legacy-index.md）都放在这里，不要放在 wiki 根或项目根。
 
 ### Step 3 — 生成 CLAUDE.md
 
@@ -100,9 +104,9 @@ mkdir -p legacy          # 仅当用户需要时
 
 ### Step 5 — 初始化元文件
 
-创建三个空的元文件：
+所有元文件都放在 `wiki/indexes/`：
 
-**index.md**：
+**wiki/indexes/index.md**：
 ```markdown
 # Wiki Index
 
@@ -114,24 +118,27 @@ mkdir -p legacy          # 仅当用户需要时
 
 ## Entities
 
+## Methods
+
 ## Comparisons
 
 ## Analysis
 ```
 
-**log.md**：
+**wiki/indexes/log.md**：
 ```markdown
 # Wiki Log
 
-> Append-only slim operation timeline. Read with `grep "^## \[" log.md | tail -5`, not full load.
+> Append-only slim operation timeline. Read with `grep "^## \[" wiki/indexes/log.md | tail -5`, not full load.
 
 ## [YYYY-MM-DD] init | Wiki initialized
 - Structure: drafts/, raw/, wiki/, legacy/
 - Schema: CLAUDE.md generated
+- Indexes: wiki/indexes/index.md, wiki/indexes/log.md
 - Ready for first ingest
 ```
 
-**legacy-index.md**（仅当有 legacy 目录时）：
+**wiki/indexes/legacy-index.md**（仅当有 legacy 目录时）：
 ```markdown
 # Legacy Index
 
@@ -147,14 +154,23 @@ mkdir -p legacy          # 仅当用户需要时
 
 ```
 Wiki 骨架已生成，包含：
-  ├── CLAUDE.md         (LLM 操作规范)
-  ├── README.md         (项目说明)
-  ├── index.md          (Wiki 索引)
-  ├── log.md            (操作日志)
-  ├── drafts/           (想法暂存)
-  ├── raw/              (输入源)
-  ├── wiki/             (知识库)
-  └── legacy/           (历史库存档)
+  ├── CLAUDE.md               (LLM 操作规范)
+  ├── README.md               (项目说明)
+  ├── drafts/                 (想法暂存)
+  ├── raw/                    (输入源)
+  ├── wiki/                   (知识库)
+  │   ├── summaries/
+  │   ├── concepts/
+  │   ├── entities/
+  │   ├── methods/            (方法论)
+  │   ├── comparisons/
+  │   ├── analysis/
+  │   └── indexes/
+  │       ├── index.md        (Wiki 索引)
+  │       ├── log.md          (操作日志)
+  │       ├── lint-report.md  (lint 输出，lint 后生成)
+  │       └── legacy-index.md (legacy 扫描结果，可选)
+  └── legacy/                 (历史库存档)
 
 下一步：
   1. 把你的源文件放入 raw/ 对应子目录
@@ -179,24 +195,84 @@ Wiki 骨架已生成，包含：
    a. 在 `wiki/summaries/` 创建摘要页（概述 + 要点列表 + 引用 + 关联）
    b. 更新或创建 `wiki/concepts/` 中的概念页。**新增内容必须标注来源** `(source: [[实际的 summary 文件名]])`——使用步骤 a 中创建的 summary 的真实文件名，frontmatter sources 追加新源的 wikilink
    c. 更新或创建 `wiki/entities/` 中的实体页。同样标注来源。注意：文章作者如果不是公众知名人物，不要创建 entity——在 summary frontmatter 中记录 `author` 字段即可
-   d. 添加交叉引用——更新所有应该链接到新内容的已有页面
-   e. 检查矛盾——新源与已有 wiki 内容冲突时，用 `> [!warning]` 标注
-   f. 更新 `index.md`，包括新增页面和已更新页面的源数量
-   g. 追加精简条目到 `log.md`（Source + Impact 数字 + Key insight，不列举完整文件名列表）
+   d. **识别并沉淀方法论**到 `wiki/methods/`（见下方"方法论识别规则"）。有则写，没有则跳过，**不要硬凑**
+   e. 添加交叉引用——更新所有应该链接到新内容的已有页面
+   f. 检查矛盾——新源与已有 wiki 内容冲突时，用 `> [!warning]` 标注
+   g. 更新 `wiki/indexes/index.md`，包括新增页面和已更新页面的源数量
+   h. 追加精简条目到 `wiki/indexes/log.md`（Source + Impact 数字 + Key insight，不列举完整文件名列表）
 
 每个 wiki 页面必须包含 YAML frontmatter（title, tags, sources, created, updated）和 `[[wikilinks]]` 交叉引用。sources 字段使用 Obsidian wikilink 格式 `"[[文件名]]"`，只用文件名不含路径。
+
+#### 方法论 vs 概念
+
+这是最容易串味的地方：method 写"怎么做"，concept 写"是什么"。两边的内容不能重复。
+
+| 这段内容 | concept | method |
+|----------|---------|--------|
+| X 是什么、X 为什么重要、X 的历史和争论 | ✅ | ❌ |
+| X 的构建流程 / 判断 X 是否足够的检查清单 / 选 X 还是 Y 的决策规则 | ❌ | ✅ |
+
+concept 里需要提流程时，一句话 + `(see [[method-page]])` 跳过去，不复制步骤。method 里需要背景时，一句话 + `(background: [[concept-page]])` 跳过去，不复制定义。
+
+#### 方法论的硬性准入条件（全满足才能建 method 页）
+
+1. **可照做**：按字面执行就行，不用先理解背景
+2. **可迁移**：在源文之外的场景也成立（只适用于某个具体项目的不算）
+3. **非平凡**：至少一条是读者事先想不到的（常识不算）
+
+三条不全满足 → 不建 method 页。把信息放进 concept 或 summary。
+
+#### 方法论页面骨架（强制）
+
+```markdown
+## 适用场景
+什么时候拿出来用（不是定义）
+
+## 步骤 / 规则
+1. 做 X
+2. 如果 Y，做 Z
+
+## 反模式
+常见误用
+
+## 适用边界
+什么时候会失效
+```
+
+"步骤 / 规则"和"反模式"至少一个非空。出现"定义 / 背景 / 意义"小节就是违规——那些东西属于 concept。
+
+#### 写入前自检（五问全答"是"才写）
+
+1. 读者照着这页能做事吗？
+2. 删掉所有"是什么 / 为什么"句子后内容还成立吗？
+3. 步骤在源文场景之外也能用吗？
+4. 至少有一条是非显然的吗？
+5. 和 `wiki/concepts/` 下同主题的 concept 页边界清楚吗？
+
+#### 命名
+
+method 文件名要读起来像动作不像东西：
+
+- 好：`review-pr-before-merge.md`、`choose-rag-vs-fine-tuning.md`
+- 坏：`harness-engineering.md`（这是概念，放 concepts）
+
+文件名如果在 concepts 下也说得通，就说明放错地方了。
+
+#### 更新方法论页面
+
+先查再改：`wiki/methods/` 下有相近主题就合并到已有页面并追加 sources；没有才新建。合并时守骨架，不要把新源的背景介绍塞进来。
 
 ### Query
 
 触发词：用户提出问题且当前在 wiki 项目中
 
 流程：
-1. 读 `index.md` 找相关页面（用 `grep "^## \[" log.md | tail -5` 了解近期上下文，不全量加载 log）
+1. 读 `wiki/indexes/index.md` 找相关页面（用 `grep "^## \[" wiki/indexes/log.md | tail -5` 了解近期上下文，不全量加载 log）
 2. 读取相关 wiki 页面
 3. wiki 不够时回退到 `raw/` 原文
 4. 综合回答，附 wiki 页面引用 `(see [[page-name]])`
-5. 回答有价值时，问用户是否存为 `wiki/analysis/` 或 `wiki/comparisons/` 新页面
-6. 若归档，更新 `index.md` 并追加精简条目到 `log.md`
+5. 回答有价值时，问用户是否存为 `wiki/analysis/`、`wiki/comparisons/` 或 `wiki/methods/` 新页面（方法论性质的答案应归到 methods）
+6. 若归档，更新 `wiki/indexes/index.md` 并追加精简条目到 `wiki/indexes/log.md`
 7. **未归档的 query 不写 log**
 
 ### Lint
@@ -211,10 +287,16 @@ Wiki 骨架已生成，包含：
 - 孤立页面：没有入链的页面
 - 缺失页面：被提及但没有独立页面的概念
 - 缺失交叉引用：应该互链但没链的页面
-- **来源缺失：concept/entity 页面中没有标注来源的内容段落**
+- **来源缺失：concept/entity/method 页面中没有标注来源的内容段落**
 - **空白与建议：知识空白主题，附上建议的搜索方向或待查找的资料类型**
+- **方法论质量**：对 `wiki/methods/` 下每一页按三把尺子检查：
+  - 和 concept 页内容重叠 >30% → 重叠部分合回 concept，method 页只留步骤；实在没独立内容就删 method 页
+  - 不满足"可照做 + 可迁移 + 非平凡" → 删
+  - 没有"适用场景/步骤/反模式/适用边界"骨架，或含"定义/背景/意义"小节 → 改写或删
+  - 文件名是名词而不是动作 → 改名或迁回 concepts
+  - 跨多个 summary 反复出现的操作模式但没有 method 页的 → 建议补写
 
-将完整报告写入 `wiki/lint-report.md`（覆盖写入，只保留最新），**主动修复**能修复的（包括合并重复页面和重命名不规范文件），不能修的给建议。追加精简摘要到 `log.md`（只记 pages scanned / issues fixed / pending 数字）。
+将完整报告写入 `wiki/indexes/lint-report.md`（覆盖写入，只保留最新），**主动修复**能修复的（包括合并重复页面和重命名不规范文件），不能修的给建议。追加精简摘要到 `wiki/indexes/log.md`（只记 pages scanned / issues fixed / pending 数字）。
 
 ### Legacy Scan
 
@@ -223,8 +305,8 @@ Wiki 骨架已生成，包含：
 流程：
 1. 列出 `legacy/` 所有文件
 2. 每个文件只读标题（第一个标题）和前 10 行——不读全文
-3. 生成或更新 `legacy-index.md`：路径、标题、一句话摘要、标签、质量预估、与 wiki 的关联
-4. 追加 `log.md`
+3. 生成或更新 `wiki/indexes/legacy-index.md`：路径、标题、一句话摘要、标签、质量预估、与 wiki 的关联
+4. 追加 `wiki/indexes/log.md`
 
 ---
 
@@ -235,10 +317,12 @@ Wiki 骨架已生成，包含：
 - **raw/ 是不可变的**。不修改、不删除、不重命名、不移动 raw 中的文件。LLM 只读。
 - **drafts/ 是人类的**。LLM 不主动处理 drafts 中的内容。
 - **wiki/ 是 LLM 的**。人类只看不改。
-- **每次操作后更新 index.md 和 log.md**。这是 wiki 的导航和时间线。log 条目保持精简，lint 完整报告写入 `wiki/lint-report.md`。
+- **每次操作后更新 `wiki/indexes/index.md` 和 `wiki/indexes/log.md`**。这是 wiki 的导航和时间线。log 条目保持精简，lint 完整报告写入 `wiki/indexes/lint-report.md`。
+- **所有索引与日志统一放 `wiki/indexes/`**。不要把 index.md、log.md、lint-report.md、legacy-index.md 散落到 wiki 根或项目根。
 - **交叉引用用 wikilinks**。格式 `[[page-name]]` 或 `[[page-name|Display Text]]`。
 - **sources 字段用 wikilinks**。格式 `"[[文件名]]"`，只用文件名不含路径，Obsidian 自动定位。
-- **知识必须可追溯**。concept/entity 页面的每段内容标注来源 `(source: [[实际的 summary 文件名]])`，引用前确认文件名正确。
+- **知识必须可追溯**。concept/entity/method 页面的每段内容标注来源 `(source: [[实际的 summary 文件名]])`，引用前确认文件名正确。
+- **方法论和概念严格分家**。method 写"怎么做"，concept 写"是什么"，同一段内容不得两边都放。建 method 前先过硬性准入条件三条 + 写入前自检五问，任一不过就不建。宁可不建，也不要把 concept 复制一份到 methods。
 - **矛盾必须显式标注**。不要悄悄覆盖旧内容。
 - **优先更新已有页面**，而不是创建新页面。创建前先检查是否已有同义/近义页面，有则合并不新建。
 - **Ingest 先讨论再执行**。先和用户讨论要点，共识后再一气呵成完成文件操作。

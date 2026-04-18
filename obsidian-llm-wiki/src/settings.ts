@@ -4,7 +4,7 @@ export type TerminalPolicy =
   | "allow-safe"
   | "allow-tests"
   | "allow-all";
-export type ACPProvider = "claude" | "cursor";
+export type ACPProvider = "claude" | "cursor" | "gemini";
 
 export interface ClaudeACPSettings {
   agentProvider: ACPProvider;
@@ -16,6 +16,8 @@ export interface ClaudeACPSettings {
   cursorSessionDir: string;
   cursorAdditionalArgs: string;
   cursorTimeoutMs: number;
+  geminiApiKey: string;
+  geminiAgentPath: string;
   wikiRootPath: string;
   enabledFeatures: {
     fileEditing: boolean;
@@ -35,6 +37,8 @@ export const DEFAULT_SETTINGS: ClaudeACPSettings = {
   cursorSessionDir: "",
   cursorAdditionalArgs: "",
   cursorTimeoutMs: 0,
+  geminiApiKey: "",
+  geminiAgentPath: "",
   wikiRootPath: "",
   enabledFeatures: {
     fileEditing: true,

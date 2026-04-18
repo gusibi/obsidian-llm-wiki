@@ -46,19 +46,20 @@ LLM: log filed queries to log.md (only filed queries are recorded)
 
 ### Lint
 
-Periodically ask LLM to health-check: contradictions, stale content, orphan pages, missing concepts, missing source attribution, knowledge gaps (with search suggestions). Full report goes to `wiki/lint-report.md`; log.md only gets a summary line.
+Periodically ask LLM to health-check: contradictions, stale content, orphan pages, missing concepts, missing source attribution, weak methodologies, knowledge gaps (with search suggestions). Full report goes to `wiki/indexes/lint-report.md`; `wiki/indexes/log.md` only gets a summary line.
 
 ### Legacy Scan
 
-Lightweight scan of `legacy/` — read only titles and first 10 lines, generate `legacy-index.md` as a map of historical content.
+Lightweight scan of `legacy/` — read only titles and first 10 lines, generate `wiki/indexes/legacy-index.md` as a map of historical content.
 
 ## Knowledge Traceability
 
 Every piece of information in the wiki is traceable back to its raw source:
 
 - **Summary pages**: one-to-one mapping with raw files
-- **Concept / Entity pages**: synthesize multiple sources, each section attributed with `(source: [[actual-summary-filename]])`
+- **Concept / Entity / Method pages**: synthesize multiple sources, each section attributed with `(source: [[actual-summary-filename]])`
 - **Frontmatter sources**: use Obsidian wikilink format `"[[filename]]"`, filename only without paths — Obsidian locates files automatically
+- **Indexes / logs / reports**: all live under `wiki/indexes/` — no scattered meta files at the project root
 
 ## Quick Start
 

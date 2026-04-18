@@ -11,11 +11,11 @@ import {
 import { ACPRequest, ACPResponse } from "./types";
 import { ClaudeACPSettings } from "./settings";
 
-export class ClaudeCodeConnection {
+export class GeminiConnection {
   private app: App;
   private apiKey: string;
-  private claudeCodePath: string;
-  private claudeProcess: ChildProcess | null = null;
+  private geminiAgentPath: string;
+  private geminiProcess: ChildProcess | null = null;
   private acpClient: ACPClient;
   private messageHandlers: Map<string, (response: ACPResponse) => void> =
     new Map();
@@ -36,44 +36,44 @@ export class ClaudeCodeConnection {
   constructor(
     app: App,
     apiKey: string,
-    claudeCodePath: string = "",
+    geminiAgentPath: string = "",
     settingsProvider: () => ClaudeACPSettings,
   ) {
     this.app = app;
     this.apiKey = apiKey;
-    this.claudeCodePath = claudeCodePath;
+    this.geminiAgentPath = geminiAgentPath;
     this.acpClient = new ACPClient(app, settingsProvider);
   }
 
   async connect(): Promise<boolean> {
-    if (!this.apiKey && !this.claudeCodePath) {
+    if (!this.apiKey && !this.geminiAgentPath) {
       throw new Error(
-        "Please set either Anthropic API key or Claude Code path in settings",
+        "Please set either Anthropic API key or Gemini Agent path in settings",
       );
     }
 
     await this.acpClient.initialize();
-    return await this.startClaudeCode();
+    return await this.startGeminiAgent();
   }
 
-  private async startClaudeCode(): Promise<boolean> {
+  private async startGeminiAgent(): Promise<boolean> {
     return new Promise((resolve) => {
       try {
         let command: string;
         let args: string[] = [];
 
-        if (this.claudeCodePath && this.claudeCodePath.trim()) {
-          if (this.claudeCodePath.includes(" ")) {
-            const parts = this.claudeCodePath.split(" ");
+        if (this.geminiAgentPath && this.geminiAgentPath.trim()) {
+          if (this.geminiAgentPath.includes(" ")) {
+            const parts = this.geminiAgentPath.split(" ");
             command = parts[0];
             args = parts.slice(1);
           } else {
-            command = this.claudeCodePath;
-            args = [];
+            command = this.geminiAgentPath;
+            args = ["--acp"];
           }
         } else {
-          command = "npx";
-          args = ["-y", "claude-code-acp"];
+          command = "gemini";
+          args = ["--acp"];
         }
 
         // Ensure Node.js is in PATH for the spawned process
@@ -81,19 +81,15 @@ export class ClaudeCodeConnection {
         const currentPath = process.env.PATH || "";
         const enhancedPath = `${nodePath}:${currentPath}`;
 
-        // If we are pointing to claude-code-acp, it's a Node script.
-        // It's safer to spawn 'node' explicitly with the script as an argument
-        // to ensure the environment is correctly picked up.
-        if (command.endsWith("claude-code-acp")) {
-          args = [command, ...args];
-          command = "node";
+        if (command.endsWith("gemini")) {
+          // just spawn as is
         }
 
         const spawnOptions: import("child_process").SpawnOptions = {
           env: this.apiKey
             ? {
                 ...process.env,
-                ANTHROPIC_API_KEY: this.apiKey,
+                GEMINI_API_KEY: this.apiKey,
                 PATH: enhancedPath,
               }
             : { ...process.env, PATH: enhancedPath },
@@ -102,25 +98,25 @@ export class ClaudeCodeConnection {
           detached: false,
         };
 
-        this.claudeProcess = spawn(command, args, spawnOptions);
+        this.geminiProcess = spawn(command, args, spawnOptions);
 
-        if (!this.claudeProcess) {
+        if (!this.geminiProcess) {
           resolve(false);
           return;
         }
 
-        this.claudeProcess.on("error", (error: any) => {
-          console.error("Claude ACP: Process error:", error);
+        this.geminiProcess.on("error", (error: any) => {
+          console.error("Gemini ACP: Process error:", error);
           this.rejectAllPendingMessages(
-            new Error(`Claude Code process error: ${error?.message || String(error)}`),
+            new Error(`Gemini Agent process error: ${error?.message || String(error)}`),
           );
           resolve(false);
         });
 
-        this.claudeProcess.on("exit", (code, signal) => {
+        this.geminiProcess.on("exit", (code, signal) => {
           this.rejectAllPendingMessages(
             new Error(
-              `Claude Code process exited${code !== null ? ` with code ${code}` : ""}${signal ? ` (${signal})` : ""}`,
+              `Gemini Agent process exited${code !== null ? ` with code ${code}` : ""}${signal ? ` (${signal})` : ""}`,
             ),
           );
           if (code !== 0) {
@@ -128,22 +124,22 @@ export class ClaudeCodeConnection {
           }
         });
 
-        if (this.claudeProcess.stdout) {
-          this.claudeProcess.stdout.on("data", (data) => {
+        if (this.geminiProcess.stdout) {
+          this.geminiProcess.stdout.on("data", (data) => {
             const dataStr = data.toString();
             this.handleACPMessages(dataStr);
           });
         }
 
-        if (this.claudeProcess.stderr) {
-          this.claudeProcess.stderr.on("data", (data) => {
+        if (this.geminiProcess.stderr) {
+          this.geminiProcess.stderr.on("data", (data) => {
             const stderrText = data.toString();
             // Only log actual errors, not debug info
             if (
               stderrText.toLowerCase().includes("error") ||
               stderrText.toLowerCase().includes("failed")
             ) {
-              console.error("Claude Code stderr:", stderrText);
+              console.error("Gemini Agent stderr:", stderrText);
             }
           });
         }
@@ -155,7 +151,7 @@ export class ClaudeCodeConnection {
           params: {
             protocolVersion: 1,
             clientInfo: {
-              name: "claude-code-acp",
+              name: "gemini acp",
               version: "0.1.0",
             },
             capabilities: {
@@ -184,7 +180,7 @@ export class ClaudeCodeConnection {
           resolve(true);
         });
 
-        this.claudeProcess.stdin?.write(initMessage + "\n");
+        this.geminiProcess.stdin?.write(initMessage + "\n");
 
         const initTimeout = setTimeout(() => {
           if (!initResolved) {
@@ -192,7 +188,7 @@ export class ClaudeCodeConnection {
           }
         }, 10000);
 
-        this.claudeProcess.on("exit", (code, signal) => {
+        this.geminiProcess.on("exit", (code, signal) => {
           clearTimeout(initTimeout);
           if (code === 0) {
             resolve(true);
@@ -201,7 +197,7 @@ export class ClaudeCodeConnection {
           }
         });
       } catch (spawnError) {
-        console.error("Claude ACP: Spawn failed:", spawnError);
+        console.error("Gemini ACP: Spawn failed:", spawnError);
         resolve(false);
       }
     });
@@ -221,8 +217,17 @@ export class ClaudeCodeConnection {
       try {
         message = JSON.parse(trimmed);
       } catch (error) {
-        console.error("Failed to parse ACP message:", error, trimmed);
-        continue;
+        // If Gemini CLI prints raw text to stdout in ACP mode, treat it as a message chunk
+        // rather than throwing a scary JSON parse error.
+        message = {
+          method: "session/update",
+          params: {
+            update: {
+              sessionUpdate: "agent_message_chunk",
+              content: { text: trimmed + "\\n" }
+            }
+          }
+        };
       }
 
       if (message.id && this.messageHandlers.has(message.id.toString())) {
@@ -259,7 +264,7 @@ export class ClaudeCodeConnection {
       if (this.isDebugLoggingEnabled()) {
         const timestamp = new Date().toISOString();
         console.log(
-          `[${timestamp}] [Claude ACP] session/update:`,
+          `[${timestamp}] [Gemini ACP] session/update:`,
           params.update,
         );
       }
@@ -308,10 +313,93 @@ export class ClaudeCodeConnection {
     }
   }
 
+  getAvailableModels(): ACPModelOption[] {
+    return [...this.availableModels];
+  }
+
+  getCurrentModelId(): string | null {
+    return this.currentModelId;
+  }
+
+  onModelsUpdated(handler: (models: ACPModelOption[]) => void): () => void {
+    this.modelListeners.add(handler);
+    if (this.availableModels.length > 0) {
+      handler([...this.availableModels]);
+    }
+    return () => {
+      this.modelListeners.delete(handler);
+    };
+  }
+
+  async setSessionModel(modelId: string): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error("Gemini Agent not connected");
+    }
+    if (!this.currentSessionId) {
+      await this.createSession();
+    }
+    const response = await this.sendMessage({
+      method: "session/set_model",
+      params: {
+        sessionId: this.currentSessionId,
+        modelId,
+      },
+    });
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+    this.currentModelId = modelId;
+    this.notifyModelListeners();
+  }
+
+  getConfigOptions(): ACPConfigOption[] {
+    return [...this.configOptions];
+  }
+
+  onConfigOptionsUpdated(
+    handler: (options: ACPConfigOption[]) => void,
+  ): () => void {
+    this.configListeners.add(handler);
+    if (this.configOptions.length > 0) {
+      handler([...this.configOptions]);
+    }
+    return () => {
+      this.configListeners.delete(handler);
+    };
+  }
+
+  async setSessionConfigOption(configId: string, value: string): Promise<void> {
+    if (!this.isConnected()) {
+      throw new Error("Gemini Agent not connected");
+    }
+    if (!this.currentSessionId) {
+      await this.createSession();
+    }
+    const response = await this.sendMessage({
+      method: "session/set_config_option",
+      params: {
+        sessionId: this.currentSessionId,
+        configId,
+        value,
+      },
+    });
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+    const existing = this.configOptions.find((opt) => opt.id === configId);
+    if (existing) {
+      existing.currentValue = value;
+    }
+    this.updateConfigOptionsFromResponse(response.result);
+    if (!response.result?.configOptions) {
+      this.notifyConfigListeners();
+    }
+  }
+
   private isDebugLoggingEnabled(): boolean {
     try {
       const storage = (globalThis as any)?.localStorage;
-      return !!storage?.getItem("claude-acp-debug");
+      return !!storage?.getItem("gemini-acp-debug");
     } catch {
       return false;
     }
@@ -362,16 +450,16 @@ export class ClaudeCodeConnection {
         }
       }
 
-      if (this.claudeProcess?.stdin) {
+      if (this.geminiProcess?.stdin) {
         const responseStr = JSON.stringify(response) + "\n";
-        this.claudeProcess.stdin.write(responseStr);
+        this.geminiProcess.stdin.write(responseStr);
       } else {
-        console.error("Claude ACP: claudeProcess.stdin is null!");
+        console.error("Gemini ACP: geminiProcess.stdin is null!");
       }
     } catch (error) {
-      console.error("Claude ACP: Error in handleIncomingRequest:", error);
+      console.error("Gemini ACP: Error in handleIncomingRequest:", error);
       if (error instanceof Error) {
-        console.error("Claude ACP: Error message:", error.message);
+        console.error("Gemini ACP: Error message:", error.message);
       }
     }
   }
@@ -394,8 +482,8 @@ export class ClaudeCodeConnection {
   ): { id: string; promise: Promise<ACPResponse> } {
     const id = (++this.messageId).toString();
     const promise = new Promise<ACPResponse>((resolve, reject) => {
-      if (!this.claudeProcess?.stdin) {
-        reject(new Error("Claude Code process not available"));
+      if (!this.geminiProcess?.stdin) {
+        reject(new Error("Gemini Agent process not available"));
         return;
       }
 
@@ -411,7 +499,7 @@ export class ClaudeCodeConnection {
       });
       this.messageRejectors.set(id, reject);
 
-      this.claudeProcess.stdin.write(JSON.stringify(fullRequest) + "\n");
+      this.geminiProcess.stdin.write(JSON.stringify(fullRequest) + "\n");
     });
 
     return { id, promise };
@@ -447,10 +535,10 @@ export class ClaudeCodeConnection {
   }
 
   private sendNotification(method: string, params?: any): void {
-    if (!this.claudeProcess?.stdin) {
+    if (!this.geminiProcess?.stdin) {
       return;
     }
-    this.claudeProcess.stdin.write(
+    this.geminiProcess.stdin.write(
       JSON.stringify({
         jsonrpc: "2.0",
         method,
@@ -461,7 +549,7 @@ export class ClaudeCodeConnection {
 
   async createSession(): Promise<string> {
     if (!this.isConnected()) {
-      throw new Error("Claude Code not connected");
+      throw new Error("Gemini Agent not connected");
     }
 
     try {
@@ -496,7 +584,7 @@ export class ClaudeCodeConnection {
 
   async loadSession(sessionId: string): Promise<string> {
     if (!this.isConnected()) {
-      throw new Error("Claude Code not connected");
+      throw new Error("Gemini Agent not connected");
     }
 
     const adapter = this.app.vault.adapter as any;
@@ -527,90 +615,22 @@ export class ClaudeCodeConnection {
 
     const activePromptRequestId = this.activePromptRequestId;
     if (activePromptRequestId) {
+      this.sendNotification("$/cancelRequest", { id: activePromptRequestId });
       this.rejectPendingMessage(activePromptRequestId, this.createAbortError());
     }
-  }
 
-  getAvailableModels(): ACPModelOption[] {
-    return [...this.availableModels];
-  }
-
-  getCurrentModelId(): string | null {
-    return this.currentModelId;
-  }
-
-  onModelsUpdated(handler: (models: ACPModelOption[]) => void): () => void {
-    this.modelListeners.add(handler);
-    if (this.availableModels.length > 0) {
-      handler([...this.availableModels]);
-    }
-    return () => {
-      this.modelListeners.delete(handler);
-    };
-  }
-
-  async setSessionModel(modelId: string): Promise<void> {
-    if (!this.isConnected()) {
-      throw new Error("Claude Code not connected");
-    }
     if (!this.currentSessionId) {
-      await this.createSession();
+      return;
     }
+
     const response = await this.sendMessage({
-      method: "session/set_model",
+      method: "session/cancel",
       params: {
         sessionId: this.currentSessionId,
-        modelId,
       },
     });
     if (response.error) {
       throw new Error(response.error.message);
-    }
-    this.currentModelId = modelId;
-    this.notifyModelListeners();
-  }
-
-  getConfigOptions(): ACPConfigOption[] {
-    return [...this.configOptions];
-  }
-
-  onConfigOptionsUpdated(
-    handler: (options: ACPConfigOption[]) => void,
-  ): () => void {
-    this.configListeners.add(handler);
-    if (this.configOptions.length > 0) {
-      handler([...this.configOptions]);
-    }
-    return () => {
-      this.configListeners.delete(handler);
-    };
-  }
-
-  async setSessionConfigOption(configId: string, value: string): Promise<void> {
-    if (!this.isConnected()) {
-      throw new Error("Claude Code not connected");
-    }
-    if (!this.currentSessionId) {
-      await this.createSession();
-    }
-    const response = await this.sendMessage({
-      method: "session/set_config_option",
-      params: {
-        sessionId: this.currentSessionId,
-        configId,
-        value,
-      },
-    });
-    if (response.error) {
-      throw new Error(response.error.message);
-    }
-    const existing = this.configOptions.find((opt) => opt.id === configId);
-    if (existing) {
-      existing.currentValue = value;
-    }
-    this.updateConfigOptionsFromResponse(response.result);
-    if (!response.result?.configOptions) {
-      this.notifyConfigListeners();
     }
   }
 
@@ -619,16 +639,16 @@ export class ClaudeCodeConnection {
     onChunk?: (chunk: string, update: any) => void,
   ): Promise<string> {
     if (!this.isConnected()) {
-      throw new Error("Claude Code not connected");
+      throw new Error("Gemini Agent not connected");
     }
 
     if (!this.currentSessionId) {
-      console.log("Claude ACP: No session, creating new one...");
+      console.log("Gemini ACP: No session, creating new one...");
       await this.createSession();
     }
 
     console.log(
-      "Claude ACP: Sending session/prompt to session",
+      "Gemini ACP: Sending session/prompt to session",
       this.currentSessionId,
     );
 
@@ -664,7 +684,7 @@ export class ClaudeCodeConnection {
       promptRequest.promise
         .then((response) => {
           unregister();
-          console.log("Claude ACP: session/prompt completed", {
+          console.log("Gemini ACP: session/prompt completed", {
             hasError: !!response.error,
             chunks: messageChunks.length,
           });
@@ -677,9 +697,7 @@ export class ClaudeCodeConnection {
         })
         .catch((error) => {
           unregister();
-          if (error?.name !== "AbortError") {
-            console.error("Claude ACP: session/prompt failed:", error.message);
-          }
+          console.error("Gemini ACP: session/prompt failed:", error.message);
           reject(error);
         });
     });
@@ -687,7 +705,7 @@ export class ClaudeCodeConnection {
 
   async editFile(filePath: string, instruction: string): Promise<string> {
     if (!this.isConnected()) {
-      throw new Error("Claude Code not connected");
+      throw new Error("Gemini Agent not connected");
     }
 
     if (!this.currentSessionId) {
@@ -755,7 +773,7 @@ export class ClaudeCodeConnection {
 
   async analyzeTags(filePath: string, content: string): Promise<string[]> {
     if (!this.isConnected()) {
-      throw new Error("Claude Code not connected");
+      throw new Error("Gemini Agent not connected");
     }
 
     if (!this.currentSessionId) {
@@ -817,11 +835,11 @@ export class ClaudeCodeConnection {
     this.modelListeners.clear();
     this.configListeners.clear();
     this.rejectAllPendingMessages(
-      new Error("Claude Code process disconnected"),
+      new Error("Gemini Agent process disconnected"),
     );
-    if (this.claudeProcess && !this.claudeProcess.killed) {
-      this.claudeProcess.kill("SIGTERM");
-      this.claudeProcess = null;
+    if (this.geminiProcess && !this.geminiProcess.killed) {
+      this.geminiProcess.kill("SIGTERM");
+      this.geminiProcess = null;
     }
   }
 
@@ -830,7 +848,7 @@ export class ClaudeCodeConnection {
   }
 
   isConnected(): boolean {
-    return this.claudeProcess !== null && !this.claudeProcess.killed;
+    return this.geminiProcess !== null && !this.geminiProcess.killed;
   }
 
   getACPClient(): ACPClient {

@@ -8,6 +8,7 @@
     "css:dev": "npx @tailwindcss/cli -i src/styles.css -o styles.css --watch",
     "dev": "npm run css && node esbuild.config.mjs",
     "build": "npm run css && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "sync": "mkdir -p \"$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/.obsidian/plugins/obsidian-llm-wiki\" && cp main.js manifest.json styles.css \"$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/.obsidian/plugins/obsidian-llm-wiki/\"",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [

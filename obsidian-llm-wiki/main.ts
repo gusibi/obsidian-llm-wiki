@@ -10,6 +10,7 @@ import {
 } from "obsidian";
 import { ClaudeCodeConnection } from "./src/claude-connection";
 import { CursorAgentConnection } from "./src/cursor-connection";
+import { GeminiConnection } from "./src/gemini-connection";
 import { ACPConnection } from "./src/agent-connection";
 import { ChatView, CHAT_VIEW_TYPE } from "./src/chat-view";
 import {
@@ -69,12 +70,22 @@ export default class ClaudeACPPlugin extends Plugin {
   private getProviderLabel(): string {
     return this.settings.agentProvider === "cursor"
       ? "Cursor Agent"
+      : this.settings.agentProvider === "gemini"
+      ? "Gemini Agent"
       : "Claude Code";
   }
 
   private createConnection(): ACPConnection {
     if (this.settings.agentProvider === "cursor") {
       return new CursorAgentConnection(this.app, () => this.settings);
+    }
+    if (this.settings.agentProvider === "gemini") {
+      return new GeminiConnection(
+        this.app,
+        this.settings.geminiApiKey,
+        this.settings.geminiAgentPath,
+        () => this.settings,
+      );
     }
 
     return new ClaudeCodeConnection(
@@ -87,12 +98,15 @@ export default class ClaudeACPPlugin extends Plugin {
 
   private async initializeACPClient() {
     if (
-      this.settings.agentProvider === "claude" &&
-      !this.settings.anthropicApiKey &&
-      !this.settings.claudeCodePath
+      (this.settings.agentProvider === "claude" &&
+        !this.settings.anthropicApiKey &&
+        !this.settings.claudeCodePath) ||
+      (this.settings.agentProvider === "gemini" &&
+        !this.settings.geminiApiKey &&
+        !this.settings.geminiAgentPath)
     ) {
       new Notice(
-        "Please set either Anthropic API key or Claude Code path in settings",
+        `Please set either API key or agent path in settings for ${this.getProviderLabel()}`,
       );
       this.updateViewConnections();
       return;
@@ -331,6 +345,9 @@ export default class ClaudeACPPlugin extends Plugin {
         if (this.settings.agentProvider === "cursor") {
           new Notice("• Cursor Agent executable path");
           new Notice("• Cursor CLI login (cursor-agent login)");
+        } else if (this.settings.agentProvider === "gemini") {
+          new Notice("• Gemini Agent executable path");
+          new Notice("• API key (if required)");
         } else {
           new Notice("• Claude Code executable path");
           new Notice("• API key (if required)");
@@ -474,6 +491,7 @@ class ClaudeACPSettingTab extends PluginSettingTab {
         dropdown
           .addOption("claude", "Claude Code (claude-code-acp)")
           .addOption("cursor", "Cursor CLI ACP (agent acp)")
+          .addOption("gemini", "Gemini Agent (gemini acp)")
           .setValue(this.plugin.settings.agentProvider)
           .onChange(async (value) => {
             await this.plugin.setAgentProvider(value as ACPProvider);
@@ -481,7 +499,35 @@ class ClaudeACPSettingTab extends PluginSettingTab {
           });
       });
 
-    if (this.plugin.settings.agentProvider === "claude") {
+    if (this.plugin.settings.agentProvider === "gemini") {
+      containerEl.createEl("h3", { text: "Gemini Agent Configuration" });
+
+      new Setting(containerEl)
+        .setName("Gemini API Key")
+        .setDesc("Your Gemini API key (optional if using local agent)")
+        .addText((text) =>
+          text
+            .setPlaceholder("AIza...")
+            .setValue(this.plugin.settings.geminiApiKey)
+            .onChange(async (value) => {
+              this.plugin.settings.geminiApiKey = value;
+              await this.plugin.saveSettings();
+            }),
+        );
+
+      new Setting(containerEl)
+        .setName("Gemini Agent Path")
+        .setDesc('Path to gemini agent (e.g., "gemini --acp" if in PATH)')
+        .addText((text) =>
+          text
+            .setPlaceholder("gemini --acp")
+            .setValue(this.plugin.settings.geminiAgentPath)
+            .onChange(async (value) => {
+              this.plugin.settings.geminiAgentPath = value;
+              await this.plugin.saveSettings();
+            }),
+        );
+    } else if (this.plugin.settings.agentProvider === "claude") {
       containerEl.createEl("h3", { text: "Claude Code Configuration" });
 
       new Setting(containerEl)
