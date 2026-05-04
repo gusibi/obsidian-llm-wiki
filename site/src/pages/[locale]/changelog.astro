@@ -1,0 +1,87 @@
+---
+import Base from '../../layouts/Base.astro';
+import { useTranslations } from '../../i18n/utils';
+
+export function getStaticPaths() {
+  return [
+    { params: { locale: 'en' } },
+    { params: { locale: 'zh' } },
+  ];
+}
+
+
+
+
+const locale = Astro.params.locale || 'en';
+const t = useTranslations(locale);
+const d = t.changelog;
+
+const entries = [
+  {
+    version: 'v0.4.0',
+    date: '2026-04-30',
+    title: { en: 'Tag Management & Multi-Provider Support', zh: '标签管理与多 Provider 支持' },
+    tags: [{ label: { en: 'Feature', zh: '新功能' }, class: 'feature' }, { label: { en: 'Feature', zh: '新功能' }, class: 'feature' }],
+    changes: {
+      en: ['AI-powered tag auditing with merge suggestions across the entire wiki', 'Multi-provider support: Claude Code and Cursor Agent via ACP', 'Enhanced ACP client with improved communication reliability', 'New methods/ directory with quality standards and methodology pages', 'Improved lint checks for method quality validation', 'GitHub Actions workflow for automated releases'],
+      zh: ['AI 驱动的标签审计，含全 wiki 合并建议', '多 Provider 支持：通过 ACP 连接 Claude Code 和 Cursor Agent', '增强的 ACP 客户端，通信可靠性提升', '新增 methods/ 目录，含质量标准和方法论页面', 'lint 检查新增方法论质量验证', 'GitHub Actions 自动发布工作流'],
+    },
+  },
+  {
+    version: 'v0.3.0',
+    date: '2026-04-08',
+    title: { en: 'ACP Client Enhancement', zh: 'ACP 客户端增强' },
+    tags: [{ label: { en: 'Improved', zh: '改进' }, class: 'improve' }],
+    changes: {
+      en: ['Enhanced ACP client for more reliable agent communication', 'Improved XML tag isolation for prompt/instruction separation', 'Better handling of raw file content embedding', 'Vault path injection for correct file creation', 'Reduced CLAUDE.md duplication in prompts (saves tokens)'],
+      zh: ['增强 ACP 客户端，Agent 通信更可靠', '改进 XML 标签隔离，防止 prompt 与指令混淆', '优化 raw 文件内容嵌入处理', 'Vault 路径注入确保文件正确创建', '减少 prompt 中 CLAUDE.md 的重复（节省 token）'],
+    },
+  },
+  {
+    version: 'v0.2.0',
+    date: '2026-04-07',
+    title: { en: 'Initial Release', zh: '首次发布' },
+    tags: [{ label: { en: 'Feature', zh: '新功能' }, class: 'feature' }, { label: { en: 'Feature', zh: '新功能' }, class: 'feature' }, { label: { en: 'Feature', zh: '新功能' }, class: 'feature' }],
+    changes: {
+      en: ['Obsidian plugin with unified Wiki panel + Chat panel', 'Claude Code skill for CLI-based wiki management', '/init command — plugin-native, zero LLM dependency', '/ingest command — source file compilation into wiki entries', '/query command — wiki-grounded Q&A with wikilink references', '/lint command — comprehensive wiki health check', '/scan command — legacy library indexing', 'Four-directory ownership model', 'CLAUDE.md schema as the operation specification', 'Source attribution system with wikilink-based tracing', 'Contradiction detection with warning callouts', 'Append-only operation logging'],
+      zh: ['Obsidian 插件，统一 Wiki 面板 + Chat 面板', 'Claude Code Skill，命令行管理 wiki', '/init 命令 — 插件原生，零 LLM 依赖', '/ingest 命令 — 源文件编译为 wiki 条目', '/query 命令 — 基于 wiki 的问答，含 wikilink 引用', '/lint 命令 — 全面 wiki 健康检查', '/scan 命令 — 历史库轻量索引', '四目录所有权模型', 'CLAUDE.md 作为操作规范', '基于 wikilink 的来源追溯系统', '矛盾检测与警告标注', '仅追加的操作日志'],
+    },
+  },
+];
+
+const lang = (Astro.params.locale || 'en') as 'en' | 'zh';
+const footerNote = lang === 'zh'
+  ? '完整提交历史见 <a href="https://github.com/gusibi/obsidian-llm-wiki/commits/master">GitHub</a>。'
+  : 'Full commit history on <a href="https://github.com/gusibi/obsidian-llm-wiki/commits/master">GitHub</a>.';
+---
+
+<Base title={d.title} description={d.description} page="changelog" locale={locale} ogType="article">
+  <main class="changelog">
+    <div class="container">
+      <header class="changelog__header">
+        <h1>{d.heading}</h1>
+        <p style="color:var(--text-secondary);font-size:1.15rem;">{d.subheading}</p>
+      </header>
+
+      <div class="changelog__list">
+        {entries.map(entry => (
+          <article class="changelog-entry">
+            {entry.tags.map(tag => (
+              <span class={`changelog-tag changelog-tag--${tag.class}`}>{tag.label[lang]}</span>
+            ))}
+            <div>
+              <span class="changelog-entry__version">{entry.version}</span>
+              <span class="changelog-entry__date">{entry.date}</span>
+            </div>
+            <h2 class="changelog-entry__title">{entry.title[lang]}</h2>
+            <ul>
+              {entry.changes[lang].map(change => <li>{change}</li>)}
+            </ul>
+          </article>
+        ))}
+      </div>
+
+      <p style="text-align:center;color:var(--text-muted);margin-top:var(--space-3xl);" set:html={footerNote} />
+    </div>
+  </main>
+</Base>

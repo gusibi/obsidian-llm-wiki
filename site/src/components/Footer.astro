@@ -1,0 +1,30 @@
+---
+import { useTranslations } from '../i18n/utils';
+
+interface Props {
+  locale: string;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const base = locale === 'en' ? '' : `/${locale}`;
+---
+
+<footer class="footer" role="contentinfo">
+  <div class="container footer__inner">
+    <div class="footer__left">
+      <span>{t.footer.version}</span>
+      <span class="footer__divider">&middot;</span>
+      <span>{t.footer.license}</span>
+      <span class="footer__divider">&middot;</span>
+      <span>{t.footer.authorLabel} <a href={t.footer.authorUrl}>{t.footer.authorName}</a></span>
+    </div>
+    <div class="footer__right">
+      <a href={t.footer.githubUrl}>GitHub</a>
+      <a href={`${base}/docs`}>{t.nav.docs}</a>
+      <a href={`${base}/changelog`}>{t.nav.changelog}</a>
+      <span class="footer__divider">&middot;</span>
+      <span>{t.footer.friendLinkLabel}: <a href={t.footer.friendLinkUrl} rel="friend">{t.footer.friendLinkName}</a></span>
+    </div>
+  </div>
+</footer>

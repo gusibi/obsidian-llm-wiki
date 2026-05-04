@@ -20,7 +20,7 @@ This plugin allows you to interact with your Obsidian notes using AI agents via 
 - [Claude Code](https://github.com/anthropics/claude-code) or Cursor installed locally.
 - `claude-code-acp` or `cursor-agent-acp` installed:
   ```bash
-  npm install -g @zed-industries/claude-code-acp
+  npm install -g @agentclientprotocol/claude-agent-acp
   ```
 
 ### 2. Installation

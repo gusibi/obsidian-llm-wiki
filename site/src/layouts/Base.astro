@@ -1,0 +1,60 @@
+---
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { useTranslations } from '../i18n/utils';
+
+interface Props {
+  title: string;
+  description: string;
+  page: 'home' | 'docs' | 'changelog' | '404';
+  locale: string;
+  ogType?: string;
+  structuredData?: any;
+}
+
+const { title, description, page, locale, ogType = 'website', structuredData } = Astro.props;
+const t = useTranslations(locale);
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogLocale = t.meta.ogLocale;
+const siteName = t.meta.siteName;
+---
+
+<!DOCTYPE html>
+<html lang={locale} data-theme="dark" dir={t.site.dir}>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <meta name="author" content={t.footer.authorName}>
+  <meta name="robots" content={page === '404' ? 'noindex, follow' : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'}">
+
+  <meta property="og:type" content={ogType}>
+  <meta property="og:url" content={canonical.href}>
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta property="og:site_name" content={siteName}>
+  <meta property="og:locale" content={ogLocale}>
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+
+  <link rel="canonical" href={canonical.href}>
+
+  {structuredData && (
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  )}
+
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <Nav page={page} locale={locale} />
+
+  <slot />
+
+  <Footer locale={locale} />
+
+  <script is:inline src="/js/scripts.js"></script>
+</body>
+</html>

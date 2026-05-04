@@ -1,0 +1,190 @@
+# LLM Wiki — Full Documentation for AI
+
+## Overview
+
+LLM Wiki is a personal knowledge compiler powered by AI. It transforms raw articles into structured, interconnected wiki entries. Unlike traditional RAG systems that retrieve-and-forget, LLM Wiki compounds knowledge over time — the LLM reads source material once, distills it, and maintains a growing wiki with cross-references and source attribution.
+
+Two components:
+1. Obsidian Plugin — GUI inside Obsidian with unified Wiki panel + Chat panel
+2. Claude Code Skill — CLI-based, works in any directory without Obsidian
+
+Version: 0.4.0
+Author: gusibi
+License: MIT
+Repository: https://github.com/gusibi/obsidian-llm-wiki
+
+## Core Philosophy: Wiki Is Not RAG
+
+Traditional RAG: upload docs → LLM retrieves fragments each query → assembles answers from scratch. Knowledge doesn't accumulate between queries. Each question re-discovers what was already found.
+
+Wiki way: source files → LLM reads once, distills, integrates → updates entity/concept pages, cross-references → knowledge compounds like compound interest. Each ingest enriches the entire wiki network.
+
+## Directory Structure
+
+```
+Vault/
+├── raw/              # Immutable source material, LLM reads only
+│   ├── tech/         # Tech articles, papers, tutorials
+│   ├── work/         # Work-related documents
+│   ├── reading/      # Book notes, podcasts
+│   └── general/      # Everything else
+├── wiki/             # LLM-maintained knowledge base
+│   ├── summaries/    # One summary per source file
+│   ├── concepts/     # Cross-source concept synthesis
+│   ├── entities/     # People, tools, frameworks, organizations
+│   ├── methods/      # Reusable how-to guides (steps, rules, anti-patterns)
+│   ├── comparisons/  # Side-by-side analysis
+│   └── analysis/     # Deep dives from archived queries
+├── drafts/           # Private scratch space — LLM never touches
+├── legacy/           # Frozen archive of old notes — read-only
+├── CLAUDE.md         # LLM operation schema (the real core logic)
+├── index.md          # Master wiki index
+└── log.md            # Operation timeline
+```
+
+## Ownership Rules
+
+| Directory | Who Writes | Who Reads | Purpose |
+|-----------|-----------|-----------|---------|
+| raw/ | You | LLM (read-only) | Immutable source material |
+| wiki/ | LLM only | Both | Structured knowledge base |
+| drafts/ | You only | You only | Private scratch space |
+| legacy/ | Nobody (frozen) | Both (read-only) | Archived old notes |
+
+## Core Commands
+
+### /init — Initialize Wiki Structure
+Creates the complete wiki skeleton: all directories, CLAUDE.md schema, index.md, and log.md. Plugin-native — executes locally via Obsidian's Vault API with zero LLM dependency. Completes in milliseconds.
+
+### /ingest — Compile Articles Into Wiki
+The core operation. Ingests a source file and compiles it into wiki entries:
+1. Reads the full source file
+2. Reviews existing wiki index for context
+3. Creates a summary page in wiki/summaries/
+4. Creates or updates concept pages in wiki/concepts/
+5. Creates or updates entity pages in wiki/entities/
+6. Extracts methodologies into wiki/methods/ (when applicable)
+7. Adds cross-references between wiki pages
+8. Checks for contradictions with existing content
+9. Updates index.md and appends to log.md
+
+One ingest can touch 10-15 wiki pages. Every paragraph in concept and entity pages is annotated with source attribution: (source: [[summary-filename]]).
+
+### /query — Wiki-Based Q&A
+Ask questions grounded in wiki content. The LLM reads the wiki index, finds relevant pages, reads them, and synthesizes answers with wikilink citations. If the answer is valuable, it can be archived as a new wiki page in wiki/analysis/. Only archived queries are logged.
+
+### /lint — Wiki Health Check
+Comprehensive audit that checks for:
+- Contradictions between pages (flagged with [!warning] callouts)
+- Orphan pages (no other page links to them)
+- Stale content (superseded by newer sources)
+- Missing pages (concepts mentioned but lacking dedicated pages)
+- Missing attribution (content without source references)
+- Knowledge gaps (topics for suggested searches)
+- Method quality (validates methods/ pages against quality standards)
+
+The LLM auto-fixes what it can and reports the rest.
+
+### /scan — Legacy Library Indexing
+Lightweight scan of old notes — reads only titles and first 10 lines of each file. Generates an index map (legacy-index.md) with paths, titles, summaries, tags, quality scores, and wiki relevance. Subsequent selective migration of interesting items to raw/ for full ingest.
+
+### Tag Audit
+AI-powered tag management: scans all frontmatter tags across the wiki, identifies duplicates and near-duplicates, suggests merges, and applies approved changes across all pages.
+
+## The CLAUDE.md Schema
+
+CLAUDE.md is the most important file in the system — the LLM operation schema. Claude Code reads it automatically when opening the vault.
+
+It defines:
+- Directory structure and ownership rules
+- Wiki page format: required YAML frontmatter (title, tags, sources, created, updated)
+- File naming: English lowercase kebab-case (e.g., transformer-architecture.md)
+- Operation procedures: step-by-step workflows for ingest, query, lint, scan
+- Methodology quality standards: three entry criteria, five self-check questions, mandatory skeleton
+- Wikilink rules: use filenames only, never include directory paths
+- Ten iron rules including: never modify raw/, always update index after changes, one ingest at a time
+
+### Wiki Page Frontmatter Format
+```yaml
+---
+title: Page Title
+tags: [tag1, tag2]
+sources:
+  - "[[source-filename]]"
+created: 2026-04-07
+updated: 2026-04-07
+---
+```
+
+### Wikilink Rules
+All wikilinks use filename only, no directory paths:
+- Correct: [[attention-is-all-you-need]]
+- Wrong: [[raw/tech/attention-is-all-you-need]]
+
+This applies everywhere: frontmatter sources, body citations, index.md, log.md.
+
+## Methodology Quality Standards
+
+For content to qualify as a method page (wiki/methods/), it must satisfy three criteria:
+1. Actionable: reader can follow steps without understanding background
+2. Transferable: steps work beyond the source article's specific context
+3. Non-trivial: at least one step, rule, or anti-pattern is non-obvious
+
+Method pages follow a mandatory skeleton: Applicability, Steps/Rules, Anti-patterns, Limitations, Related.
+
+## Source Attribution
+
+Every claim in concept, entity, and method pages must be traceable:
+- Summary pages: one-to-one mapping to raw source files
+- Concept/Entity/Method pages: frontmatter sources field lists all contributing raw files
+- Body content: inline citations using (source: [[summary-filename]])
+- Citation filenames must match actual existing files — never invent or guess filenames
+
+## Design Decisions
+
+### Why not RAG?
+For personal knowledge bases under 10,000 notes, a simple index.md works better than vector search. Benefits: zero infrastructure, deterministic results, context-rich (LLM reads complete pages), cross-referenced wikilinks create a browsable graph.
+
+### Why CLAUDE.md instead of hardcoded logic?
+Everyone's knowledge needs differ. Some want wiki/tutorials/, some don't need legacy/. CLAUDE.md is an editable configuration file — change it and the LLM adapts. No plugin rebuild needed.
+
+### Why strict directory ownership?
+Unclear ownership is the root cause of wiki decay. When both human and AI edit the same files, trust erodes. Clear boundaries: wiki/ is always LLM-maintained, so you can trust its structure and attribution.
+
+### Why no discussion during ingest?
+Early versions had LLM "discuss key points" before executing. Result: LLMs produced analysis but created zero files. The fix: remove discussion steps. The LLM proposes a brief plan, you approve or adjust in one line, then it executes everything automatically.
+
+## Installation
+
+### Obsidian Plugin
+1. Download main.js, manifest.json, styles.css from latest GitHub release
+2. Place in .obsidian/plugins/obsidian-llm-wiki/
+3. Enable "LLM Wiki" in Obsidian Settings → Community Plugins
+4. Install Claude Code or Cursor
+5. Install ACP bridge: npm install -g @agentclientprotocol/claude-agent-acp
+6. Configure ACP executable path in plugin settings
+
+### Claude Code Skill
+1. Copy skills/llm-wiki/ to Claude Code skills directory
+2. Restart Claude Code or reload skills
+3. Navigate to any directory and say "initialize a wiki here"
+
+## Quick Start
+1. /init — creates wiki skeleton in under a second
+2. Drop an article into raw/
+3. /ingest raw/your-article.md — LLM compiles it into wiki entries
+4. /query — ask questions grounded in your growing wiki
+5. /lint — run weekly to maintain wiki health
+6. /scan — index legacy notes for selective migration
+
+## Tips and Best Practices
+- Ingest one article at a time for best quality
+- Participate during ingest: use your one-line response to steer emphasis
+- Archive great query answers as analysis or comparison pages
+- Run lint weekly to prevent accumulated mess
+- Use Git — your wiki is a directory of Markdown files
+- Let the LLM rename files — don't manually organize wiki pages
+- The skill's CLAUDE.md is not duplicated in prompts — Claude Code reads it automatically
+
+## Built With AI
+This project itself was built with AI assistance — from design to coding to debugging, all done within Cursor. Every pitfall encountered during development became better prompt design.

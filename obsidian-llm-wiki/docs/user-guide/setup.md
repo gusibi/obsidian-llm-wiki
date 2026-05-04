@@ -40,7 +40,7 @@
 ```
 **解决方案**:
 - 检查路径是否正确：终端运行 `which claude-code-acp` 获取路径。
-- 确保已全局安装：`npm install -g @zed-industries/claude-code-acp`。
+- 确保已全局安装：`npm install -g @agentclientprotocol/claude-agent-acp`。
 
 ### 2. **权限不足 (EACCES)**
 ```
@@ -77,7 +77,7 @@
 ## 🚀 进阶：使用不同启动方式
 
 - **方式 1（推荐）**: 直接使用命令名（确保在 PATH 中）。
-- **方式 2**: 使用 `npx` (在路径处填入 `npx @zed-industries/claude-code-acp`)。
+- **方式 2**: 使用 `npx` (在路径处填入 `npx @agentclientprotocol/claude-agent-acp`)。
 - **方式 3**: 使用绝对路径 (如 `/usr/local/bin/claude-code-acp`)。
 
 ---

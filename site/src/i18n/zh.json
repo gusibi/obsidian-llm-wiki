@@ -1,0 +1,551 @@
+{
+  "site": {
+    "baseUrl": "https://llmwiki.eztoolab.com",
+    "lang": "zh",
+    "langName": "中文",
+    "dir": "ltr"
+  },
+  "meta": {
+    "siteName": "LLM Wiki",
+    "ogLocale": "zh_CN"
+  },
+  "nav": {
+    "home": "首页",
+    "docs": "文档",
+    "changelog": "更新日志",
+    "switchLangLabel": "EN",
+    "switchLangUrl": "/",
+    "switchLangCode": "en"
+  },
+  "footer": {
+    "version": "LLM Wiki v0.4.0",
+    "license": "MIT License",
+    "authorLabel": "作者",
+    "authorName": "gusibi",
+    "authorUrl": "https://github.com/gusibi",
+    "githubUrl": "https://github.com/gusibi/obsidian-llm-wiki",
+    "friendLinkLabel": "友情链接",
+    "friendLinkUrl": "https://onlinestool.com/",
+    "friendLinkName": "Online Tool"
+  },
+  "index": {
+    "title": "LLM Wiki — 用 AI 编译你的知识库",
+    "description": "LLM Wiki 是一个由 AI 驱动的个人知识编译器。把原始文章变成结构化 wiki 条目，知识持续复利增长。",
+    "hero": {
+      "tagline": "个人知识编译器",
+      "titleHtml": "编译你的知识。<br>让 AI <em>维护</em> Wiki。",
+      "subtitle": "一个越用越聪明的个人知识库。喂入文章，LLM 阅读、提炼、交叉引用并持续维护 wiki。知识像复利一样增长 — 而不是每次查询从头检索。",
+      "cta1": "快速开始",
+      "cta1Url": "/zh/docs",
+      "cta2": "GitHub 查看源码",
+      "pipeline": [
+        {
+          "dir": "raw/",
+          "desc": "你的文章"
+        },
+        {
+          "dir": "LLM",
+          "desc": "阅读并提炼"
+        },
+        {
+          "dir": "wiki/",
+          "desc": "结构化知识"
+        },
+        {
+          "dir": "∞",
+          "desc": "持续复利增长"
+        }
+      ]
+    },
+    "featuresLabel": "核心操作",
+    "featuresTitle": "五个命令，覆盖全部流程",
+    "featuresSubtitle": "没有复杂的 UI。五个斜杠命令驱动整个知识编译管线。",
+    "features": [
+      {
+        "icon": "1",
+        "command": "/init",
+        "title": "一键初始化 Wiki 结构",
+        "desc": "一个命令创建完整的 wiki 骨架—目录、CLAUDE.md 规范、索引文件和操作日志。插件原生执行，零 LLM 依赖，毫秒级完成。"
+      },
+      {
+        "icon": "2",
+        "command": "/ingest",
+        "title": "智能摄入原始资料",
+        "desc": "LLM 读取文章，创建摘要页、提取概念页和实体页、添加交叉引用、检查矛盾、更新索引—一气呵成，无需人工干预。"
+      },
+      {
+        "icon": "3",
+        "command": "/query",
+        "title": "基于 Wiki 的问答",
+        "desc": "提出问题，LLM 先查索引、再读相关页面、最后综合回答并附上 wikilink 引用。好答案可以沉淀为 wiki 新页面，知识持续积累。"
+      },
+      {
+        "icon": "4",
+        "command": "/lint",
+        "title": "健康检查",
+        "desc": "定期 wiki 体检：发现页面矛盾、孤立页面、过时内容、缺失引用、知识空白。能修的自动修，不能修的列出报告。"
+      },
+      {
+        "icon": "5",
+        "command": "/scan",
+        "title": "历史库扫描",
+        "desc": "面对几百篇旧笔记？轻量扫描每个文件只读标题和前 10 行，生成索引地图。后续按需精选迁移到 raw/ 做正式 ingest。"
+      },
+      {
+        "icon": "6",
+        "command": "tag audit",
+        "title": "标签管理",
+        "desc": "AI 驱动的标签审计与合并建议。清理标签冗余、合并同义词、维护整个 wiki 的分类体系一致性。"
+      }
+    ],
+    "stepsLabel": "工作流程",
+    "stepsTitle": "五步运转",
+    "stepsSubtitle": "从原始文章到持续生长的个人知识库。",
+    "steps": [
+      {
+        "num": "1",
+        "command": "/init",
+        "title": "初始化编译器",
+        "desc": "插件在 Vault 中创建完整的 wiki 骨架—目录结构、CLAUDE.md 规范、索引文件、操作日志。零 LLM 参与，瞬间完成。"
+      },
+      {
+        "num": "2",
+        "command": "把文件放入 raw/",
+        "title": "喂入原始资料",
+        "desc": "把文章、论文、读书笔记或网页剪藏放入 <code>raw/</code> 目录。不用担心分类 — LLM 在 ingest 时会自动归类到子目录。"
+      },
+      {
+        "num": "3",
+        "command": "/ingest",
+        "title": "编译成 Wiki 条目",
+        "desc": "LLM 读取每篇文章，提炼要点，创建结构化的 wiki 页面并添加交叉引用和来源标注。一次 ingest 可能更新 10–15 个页面。"
+      },
+      {
+        "num": "4",
+        "command": "/query",
+        "title": "查询你的知识库",
+        "desc": "提问。LLM 查阅 wiki 索引，读取相关页面，综合回答并附可追溯的引用。优质回答可归档为 wiki 新页面。"
+      },
+      {
+        "num": "5",
+        "command": "/lint",
+        "title": "维护 Wiki 健康",
+        "desc": "定期运行健康检查。LLM 发现并修复矛盾、孤立页面、过时内容、缺失链接和知识空白。Wiki 随规模增长仍保持一致性。"
+      }
+    ],
+    "philLabel": "核心理念",
+    "philTitle": "Wiki 不是 RAG",
+    "philSubtitle": "两种截然不同的 AI 辅助知识管理方式。一种每次查询都重新开始。另一种持续累积。",
+    "philOldLabel": "传统方式",
+    "philOldTitle": "RAG：检索并遗忘",
+    "philOldFlow": "上传文档 → <span>LLM 检索片段</span> → 从头拼凑答案 → 知识 <span>未被保留</span>",
+    "philOldPoints": [
+      "知识不会在两次查询之间积累",
+      "每次提问都在重新发现已知内容",
+      "文档之间没有交叉引用",
+      "矛盾无法被发现",
+      "文档增多反而质量下降"
+    ],
+    "philNewLabel": "Wiki 方式",
+    "philNewTitle": "Wiki：编译并累积",
+    "philNewFlow": "源文件 → <span>LLM 一次性读取、提炼</span> → 更新实体/概念页 → 知识 <span>持续复利增长</span>",
+    "philNewPoints": [
+      "知识在已有基础上持续构建",
+      "每次 ingest 丰富整个 wiki 网络",
+      "自动建立页面间的交叉引用",
+      "矛盾被检测并标记",
+      "每新增一个来源，质量都有提升"
+    ],
+    "structLabel": "架构",
+    "structTitle": "四个目录，四种角色",
+    "structSubtitle": "清晰的权责边界防止 wiki 腐烂。每个目录有且仅有一个写入者。",
+    "tree": [
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "raw/",
+        "type": "dir",
+        "comment": "# 原始资料 — 不可变，LLM 只读"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "tech/",
+        "type": "dir",
+        "comment": "# 技术文章、论文、教程"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "work/",
+        "type": "dir",
+        "comment": "# 工作相关文档"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "reading/",
+        "type": "dir",
+        "comment": "# 读书笔记、播客笔记"
+      },
+      {
+        "indent": "│",
+        "icon": "└──",
+        "name": "general/",
+        "type": "dir",
+        "comment": "# 其他内容"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "wiki/",
+        "type": "dir",
+        "comment": "# LLM 维护的知识库"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "summaries/",
+        "type": "dir",
+        "comment": "# 每篇源文件的结构化摘要"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "concepts/",
+        "type": "dir",
+        "comment": "# 跨源综合的概念页"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "entities/",
+        "type": "dir",
+        "comment": "# 人物、工具、框架"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "methods/",
+        "type": "dir",
+        "comment": "# 可复用的方法论"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "comparisons/",
+        "type": "dir",
+        "comment": "# 对比分析"
+      },
+      {
+        "indent": "│",
+        "icon": "└──",
+        "name": "analysis/",
+        "type": "dir",
+        "comment": "# 优质问答归档的深度分析"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "drafts/",
+        "type": "dir",
+        "comment": "# 你的私密草稿空间 — LLM 绝不触碰"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "legacy/",
+        "type": "dir",
+        "comment": "# 旧笔记冻结存档 — 只读"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "CLAUDE.md",
+        "type": "file",
+        "commentHtml": "# LLM 操作规范 — 真正的<span class=\"dir-tree__highlight\">\"核心逻辑\"</span>"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "index.md",
+        "type": "file",
+        "comment": "# Wiki 主索引"
+      },
+      {
+        "indent": "",
+        "icon": "└──",
+        "name": "log.md",
+        "type": "file",
+        "comment": "# 操作时间线"
+      }
+    ],
+    "ownershipCaption": "所有权规则",
+    "ownershipCols": [
+      "目录",
+      "谁写入",
+      "谁读取",
+      "用途"
+    ],
+    "ownershipRows": [
+      {
+        "dir": "raw/",
+        "write": "你",
+        "writeBadge": "human",
+        "read": "LLM（只读）",
+        "readBadge": "llm",
+        "purpose": "不可变的信息源"
+      },
+      {
+        "dir": "wiki/",
+        "write": "仅 LLM",
+        "writeBadge": "llm",
+        "read": "双方",
+        "readBadge": "both",
+        "purpose": "结构化知识库"
+      },
+      {
+        "dir": "drafts/",
+        "write": "仅你",
+        "writeBadge": "human",
+        "read": "仅你",
+        "readBadge": "human",
+        "purpose": "私密草稿空间"
+      },
+      {
+        "dir": "legacy/",
+        "write": "无人（已冻结）",
+        "writeBadge": "none",
+        "read": "双方（只读）",
+        "readBadge": "both",
+        "purpose": "旧笔记存档"
+      }
+    ],
+    "compLabel": "两种形态",
+    "compTitle": "插件还是 Skill — 随你选",
+    "compSubtitle": "同样的 wiki 引擎，两种不同的交互方式。选择适合你的工作流。",
+    "compPluginLabel": "Obsidian 用户",
+    "compPluginTitle": "Obsidian 插件",
+    "compPluginDesc": "统一的 Wiki 面板 + Chat 面板内嵌在 Obsidian 中。文件选择器、状态徽章、一键 init。通过 ACP 协议与 Claude Code 或 Cursor 通信。",
+    "compPluginPoints": [
+      "Obsidian 内的图形界面",
+      "文件选择器选源文件",
+      "Cmd+Shift+C 一键打开聊天"
+    ],
+    "compSkillLabel": "终端 / 任意编辑器",
+    "compSkillTitle": "Claude Code Skill",
+    "compSkillDesc": "一个 Claude Code Skill，在任何目录直接使用。无需 Obsidian。初始化 wiki、ingest 源文件、查询、lint — 全部在终端完成。",
+    "compSkillPoints": [
+      "除 Claude Code 外零依赖",
+      "任意目录、任意编辑器",
+      "适合批量处理"
+    ],
+    "ctaTitle": "准备好编译你的知识了吗？",
+    "ctaSubtitle": "从一个空 Vault 开始，最终拥有一个持续生长、越用越丰富的个人 wiki。",
+    "ctaBtn1": "阅读文档",
+    "ctaBtn1Url": "/zh/docs",
+    "ctaBtn2": "GitHub Star"
+  },
+  "docs": {
+    "title": "文档 — LLM Wiki",
+    "description": "LLM Wiki 完整使用文档。安装指南、五大核心命令详解、CLAUDE.md 规范参考、设计决策。",
+    "heading": "使用文档",
+    "subheading": "安装、配置、掌握 LLM Wiki 的全部功能。"
+  },
+  "changelog": {
+    "title": "更新日志 — LLM Wiki",
+    "description": "LLM Wiki 发布历史与更新日志。追踪 Obsidian 插件和 Claude Code Skill 的新功能、改进和修复。",
+    "heading": "更新日志",
+    "subheading": "LLM Wiki 所有值得关注的变更。"
+  },
+  "page404": {
+    "title": "404 — 页面未找到 | LLM Wiki",
+    "code": "404",
+    "heading": "这个页面还没有被编译。",
+    "body": "就像一篇还未被 ingest 的文章放在 <code>raw/</code> 里，这个 URL 指向了空白。试试回到<a href=\"/zh/\">首页</a>或查看<a href=\"/zh/docs\">文档</a>。",
+    "btn": "返回首页"
+  },
+  "docsContent": {
+    "tocTitle": "本页内容",
+    "quickStartTitle": "快速开始",
+    "quickStartCode": "# 方式一：Obsidian 插件\n1. 安装插件到 Obsidian\n2. 打开 Chat 面板（Cmd+Shift+C）\n3. 输入 /init\n\n# 方式二：Claude Code Skill\n1. 将 llm-wiki skill 添加到 Claude Code\n2. 打开任意目录\n3. 说\"在这里初始化 wiki\"",
+    "quickStartAfter": "<code>/init</code> 命令创建所有目录、<code>CLAUDE.md</code>、<code>index.md</code> 和 <code>log.md</code> — wiki 骨架即刻就绪。把文章丢进 <code>raw/</code>，然后输入 <code>/ingest raw/你的文章.md</code> 见证魔法。",
+    "installTitle": "安装",
+    "installPluginTitle": "Obsidian 插件",
+    "installPluginSteps": [
+      "从 <a href=\"https://github.com/gusibi/obsidian-llm-wiki/releases\">最新 Release</a> 下载 <code>main.js</code>、<code>manifest.json</code> 和 <code>styles.css</code>",
+      "放入 Vault 的 <code>.obsidian/plugins/obsidian-llm-wiki/</code> 目录",
+      "在 Obsidian 设置 → 第三方插件中启用 \"LLM Wiki\"",
+      "安装 <a href=\"https://github.com/anthropics/claude-code\">Claude Code</a> 或 <a href=\"https://cursor.com\">Cursor</a>",
+      "安装 ACP 桥接：<code>npm install -g @agentclientprotocol/claude-agent-acp</code>",
+      "在插件设置中配置 ACP 可执行文件路径"
+    ],
+    "installSkillTitle": "Claude Code Skill",
+    "installSkillSteps": [
+      "将 <code>skills/llm-wiki/</code> 目录复制到 Claude Code 的 skills 文件夹",
+      "重启 Claude Code（或重新加载 skills）",
+      "进入任意目录，说 <em>\"在这里初始化 wiki\"</em>"
+    ],
+    "installSkillAfter": "Skill 创建同样的 wiki 结构 — 不需要 Obsidian。与任意文本编辑器配合使用。",
+    "installTip": "<strong>建议：</strong> 如果你是 Obsidian 用户，用插件更顺滑（有文件选择器）。如果偏好终端或使用其他编辑器，用 Skill。",
+    "comparisonTitle": "插件 vs Skill",
+    "comparisonCols": [
+      "",
+      "Obsidian 插件",
+      "Claude Code Skill"
+    ],
+    "comparisonRows": [
+      {
+        "aspect": "界面",
+        "plugin": "Obsidian 内置图形界面",
+        "skill": "终端 / Claude Code 聊天"
+      },
+      {
+        "aspect": "文件选择",
+        "plugin": "图形化文件选择器",
+        "skill": "手动输入路径"
+      },
+      {
+        "aspect": "Wiki 状态",
+        "plugin": "内置状态面板",
+        "skill": "询问 LLM"
+      },
+      {
+        "aspect": "快捷键",
+        "plugin": "Cmd+Shift+C/E/S",
+        "skill": "标准 Claude Code"
+      },
+      {
+        "aspect": "配置",
+        "plugin": "插件安装 + ACP 桥接",
+        "skill": "放入 skill 文件夹"
+      },
+      {
+        "aspect": "脱离 Obsidian 使用",
+        "plugin": "否",
+        "skill": "是"
+      },
+      {
+        "aspect": "批量操作",
+        "plugin": "一次一个",
+        "skill": "可脚本化"
+      }
+    ],
+    "commandsTitle": "核心操作",
+    "commandsIntro": "五个斜杠命令驱动整个知识编译管线。没有复杂的 UI。",
+    "initTitle": "/init — 初始化 Wiki 结构",
+    "initBody": "第一个要运行的命令。创建完整的 wiki 骨架 — 所有目录、<code>CLAUDE.md</code> 规范、<code>index.md</code> 和 <code>log.md</code>。<strong>插件原生执行</strong>，通过 Obsidian 的 Vault API 本地执行，零 LLM 依赖，毫秒级完成。",
+    "initCode": "Vault/\n├── raw/          (tech/, work/, reading/, general/)\n├── wiki/         (summaries/, concepts/, entities/, methods/, comparisons/, analysis/)\n├── drafts/\n├── legacy/\n├── CLAUDE.md     ← LLM 操作规范\n├── index.md      ← Wiki 主索引\n└── log.md        ← 操作时间线",
+    "ingestTitle": "/ingest — 将文章编译为 Wiki",
+    "ingestBody": "核心操作。喂入文章，LLM 将其编译为 wiki 条目。Ingest 工作流：",
+    "ingestSteps": [
+      "完整阅读源文件，浏览已有 wiki 索引",
+      "<strong>给出明确的处理方案</strong>（不是提问）— 建议的 summary 名称、要建/改的 concept/entity、风险提示 — 控制在 10 行以内",
+      "等待你一句话回复（\"同意\" / \"改成 X\" / \"不要 Y\"）",
+      "一气呵成完成所有文件操作：创建摘要页、更新概念页、更新实体页、提取方法论（如满足条件）、添加交叉引用、检查矛盾、更新索引和日志"
+    ],
+    "ingestUsage": "/ingest raw/tech/transformer-paper.md",
+    "ingestAfter": "一次 ingest 可能触达 10–15 个 wiki 页面。来源标注是自动的 — 每段内容都标注了 <code>(source: [[摘要文件名]])</code>。",
+    "queryTitle": "/query — 基于 Wiki 的问答",
+    "queryBody": "提出问题，LLM 查阅 wiki 索引，读取相关页面，综合回答并附上 wikilink 引用。如果回答有价值且可复用，可归档为 <code>wiki/analysis/</code> 下的新页面。只有归档的查询记录到日志，未归档的不留痕。",
+    "queryUsage": "/query self-attention 和 cross-attention 有什么区别？",
+    "lintTitle": "/lint — Wiki 健康检查",
+    "lintBody": "全面审计，检查矛盾、孤立页面、过时内容、缺失页面、来源缺失、知识空白和方法论质量。LLM 能修的自动修（合并重复页面、重命名文件、补链接），其余的写入 <code>wiki/lint-report.md</code>。建议每周运行一次。",
+    "lintChecks": [
+      "<strong>页面矛盾</strong> — 用 <code>[!warning]</code> 标注冲突声明",
+      "<strong>孤立页面</strong> — 没有其他页面链接到它",
+      "<strong>过时内容</strong> — 被新源取代的信息",
+      "<strong>缺失页面</strong> — 被反复提及但缺乏独立页面的概念",
+      "<strong>来源缺失</strong> — 没有标注来源的内容段落",
+      "<strong>知识空白</strong> — 附建议搜索方向的主题",
+      "<strong>方法论质量</strong> — 对照准入条件和骨架标准验证 method 页面"
+    ],
+    "scanTitle": "/scan — 历史库扫描",
+    "scanBody": "针对已有的几百篇旧笔记。<em>轻量扫描</em> — 每个文件只读标题和前 10 行 — 生成索引地图到 <code>legacy-index.md</code>。后续按需精选迁移到 <code>raw/</code> 做正式 ingest。",
+    "scanWarning": "<strong>不要全量 ingest 历史内容。</strong> 推荐策略：先扫描，新内容走正常 ingest，按主题需要时再精选迁移历史内容。",
+    "tagAuditTitle": "标签审计",
+    "tagAuditBody": "让 LLM 审计 wiki 的标签。扫描所有 frontmatter 标签，识别重复和近义标签，提出合并建议。你确认后它自动应用到所有页面。<br><br><code>审计 wiki/ 中的标签</code>",
+    "claudeMdTitle": "CLAUDE.md 规范",
+    "claudeMdIntro": "<code>CLAUDE.md</code> 是整个系统最重要的文件。它不是 README — 它是 <strong>LLM 操作规范</strong>，Claude Code 启动时自动读取。它定义了目录结构、所有权规则、wiki 页面格式、操作流程和质量标准。把它想象成编译器的配置文件 — 编辑它，LLM 的行为就跟着变，不需要改任何代码。",
+    "claudeMdDefinesLabel": "CLAUDE.md 定义了：",
+    "claudeMdDefines": [
+      "<strong>目录结构和所有权规则</strong> — 谁能写哪里（raw/ 不可变，wiki/ 是 LLM 领地，drafts/ 人类专属）",
+      "<strong>Wiki 页面格式</strong> — 必需的 YAML frontmatter：title、tags、sources、created、updated",
+      "<strong>文件命名规范</strong> — wiki/ 下所有文件用英文小写 kebab-case",
+      "<strong>操作流程</strong> — ingest、query、lint、scan 的逐步流程",
+      "<strong>方法论质量标准</strong> — 三条准入条件、五个自检问题、强制页面骨架",
+      "<strong>Wikilink 规则</strong> — 只用文件名，绝不包含目录路径",
+      "<strong>十条铁律</strong> — 绝不修改 raw/、每次操作后更新 index、一次只 ingest 一篇等"
+    ],
+    "claudeMdPrinciplesLabel": "规范中内置的关键设计原则：",
+    "claudeMdPrinciples": [
+      "<strong>raw/ 不可变</strong> — LLM 读取源文件但绝不修改、移动或删除",
+      "<strong>wiki/ 是 LLM 的领地</strong> — 人类阅读但不直接编辑 wiki 页面",
+      "<strong>知识必须可追溯</strong> — 每条声明通过 wikilink 链接回其原始来源",
+      "<strong>矛盾标记，不静默覆盖</strong> — 冲突信息用 <code>[!warning]</code> 标注",
+      "<strong>日志仅追加</strong> — 操作被记录供审计；用 <code>tail</code> 读取最近条目"
+    ],
+    "wikiTypesTitle": "Wiki 页面类型",
+    "wikiTypesIntro": "LLM 在 <code>wiki/</code> 中维护六种页面：",
+    "wikiTypes": [
+      "<strong>摘要 Summary</strong>（<code>wiki/summaries/</code>）— 每个摄入源一个。一对一映射 raw 文件。文件名用英文 kebab-case 根据内容主题命名（禁止与 raw 源文件同名）。",
+      "<strong>概念 Concept</strong>（<code>wiki/concepts/</code>）— 跨源综合。每个重要概念或主题一个页面。正文每段标注来源。",
+      "<strong>实体 Entity</strong>（<code>wiki/entities/</code>）— 知名人物、工具、框架、组织。只建公众知名人物 — 非公众人物的文章作者在 summary frontmatter 记录 author 字段即可。",
+      "<strong>方法论 Method</strong>（<code>wiki/methods/</code>）— 可复用的操作指南。必须满足三条准入：可照做、可迁移、非平凡。与 concept 严格分家（method 回答\"怎么做\"，concept 回答\"是什么\"）。",
+      "<strong>对比 Comparison</strong>（<code>wiki/comparisons/</code>）— 相关事物的并排分析。",
+      "<strong>分析 Analysis</strong>（<code>wiki/analysis/</code>）— 深度探索，通常由优质问答结果归档而来。"
+    ],
+    "methodsTitle": "方法论质量标准",
+    "methodsIntro": "Method 页面有 wiki 中最严格的质量门槛。创建 method 页前，内容必须通过三条准入条件：",
+    "methodsCriteria": [
+      "<strong>可照做</strong> — 读者不需要理解背景就能按字面执行。\"做 X；如果 Y，做 Z\"，而不是\"X 很重要\"。",
+      "<strong>可迁移</strong> — 步骤在源文之外的场景也站得住。只适用于特定产品/项目的操作手册不算方法论。",
+      "<strong>非平凡</strong> — 至少有一条步骤、规则或反模式是非显然的。\"先测试再上线\"这种常识不算方法论。"
+    ],
+    "methodsNote": "三条必须同时满足，缺一不可。不满足的，一律不建 method 页 — <em>宁可一个 method 页都不建，也不要把 concept 复制一份塞到 methods 下</em>。",
+    "attributionTitle": "来源追溯",
+    "attributionBody": "Wiki 的核心价值是知识可追溯。每段信息都必须能追回到原始来源：",
+    "attributionList": [
+      "<strong>摘要页面</strong> — frontmatter <code>sources</code> 指向 raw 源文件",
+      "<strong>概念 / 实体 /方法论页面</strong> — frontmatter <code>sources</code> 列出所有贡献过内容的 raw 文件；正文用行内引用：<code>(source: [[摘要文件名]])</code>",
+      "<strong>引用文件名必须使用实际存在的文件名</strong> — 不要编造或推测"
+    ],
+    "designDecisionsTitle": "设计决策",
+    "whyNotRagTitle": "为什么不用 RAG？",
+    "whyNotRagBody": "对于一万条以内笔记的个人知识库，简单的 <code>index.md</code> 比向量搜索更好用。<strong>零基础设施</strong> — 不需要 embedding 管线或向量数据库。<strong>确定性</strong> — 索引文件是人类可读的，可调试。<strong>上下文丰富</strong> — LLM 读取完整页面，不是检索片段。<strong>交叉引用</strong> — wikilink 创建可浏览的图谱，不是孤立块。当 wiki 增长到超过上下文窗口时，RAG 可以补充 — 但先用简单方案跑通。",
+    "whyClaudeMdTitle": "为什么用 CLAUDE.md 而不是硬编码逻辑？",
+    "whyClaudeMdBody": "因为每个人的知识需求不同。有人要加 <code>wiki/tutorials/</code>，有人不需要 <code>legacy/</code>，有人用英文，有人用中文。CLAUDE.md 是一个可编辑的配置文件 — 改了它，LLM 的行为就跟着变。不需要重新编译插件。它也可复用：同一份 CLAUDE.md 适用于 Claude Code、Cursor 或任何遵循该格式的 LLM Agent。",
+    "whyOwnershipTitle": "为什么严格的目录所有权？",
+    "whyOwnershipBody": "职责不清是笔记库腐烂的根本原因。当人和 AI 都编辑同一文件时，信任被侵蚀 — 你分不清哪些是 AI 生成的、哪些是人类整理的。明确边界：<code>wiki/</code> 永远由 LLM 维护，你可以信任它的结构和来源标注。<code>drafts/</code> 永远是人类专属，你有一个安全的草稿空间。",
+    "whyNoDiscussionTitle": "为什么 ingest 时不讨论？",
+    "whyNoDiscussionBody": "早期版本让 LLM 在 ingest 前\"讨论关键要点\"。结果：LLM 写了一堆漂亮的分析但<em>一个文件都没创建</em>。解决办法：去掉所有讨论步骤。LLM 先给简短方案（10 行以内），你一句话批准或调整，然后它自动执行所有操作。就像 <code>make build</code> — 应该直接出编译产物，而不是打印一份\"我打算怎么编译\"的计划书。",
+    "dailyLoopTitle": "日常使用循环",
+    "dailyLoopIntro": "Wiki 搭好后，日常节奏很简单：",
+    "dailyLoop": [
+      "<strong>新文章</strong> → 丢进 <code>raw/</code> → <code>/ingest</code> → wiki 自动更新",
+      "<strong>有问题</strong> → <code>/query</code> → 好回答 → 沉淀为 wiki 页面",
+      "<strong>定期</strong> → <code>/lint</code> → 维护 wiki 健康",
+      "<strong>旧笔记</strong> → <code>legacy/</code> → <code>/scan</code> → 生成索引 → 按需迁移到 <code>raw/</code>"
+    ],
+    "tipsTitle": "技巧与最佳实践",
+    "tips": [
+      "<strong>一次只 ingest 一篇文章。</strong> LLM 专注单个来源时产出更好。",
+      "<strong>参与 ingest 过程。</strong> LLM 先提方案，用一句话回复来引导侧重点。",
+      "<strong>归档好答案。</strong> 只在聊天记录里的好答案等于丢失了。归档它。",
+      "<strong>每周运行 lint。</strong> 定期维护防止积累混乱 — 就像给代码跑测试。",
+      "<strong>用 Git 版本管理。</strong> Wiki 就是 Markdown 文件目录，Git 给你历史、diff 和安全感。",
+      "<strong>让 LLM 重命名文件。</strong> 不要手动整理 wiki 页面，lint 会发现命名问题并修复所有引用。",
+      "<strong>不要在 prompt 里重复注入 CLAUDE.md。</strong> Claude Code 启动时自动读取。重复注入浪费 token 且增加混淆。",
+      "<strong>用 XML 标签隔离 prompt。</strong> 把原始源内容包在 <code>&lt;raw_input role=\"data\"&gt;</code> 标签里，防止 LLM 把文章内容当成指令执行。"
+    ],
+    "toolsTitle": "配套工具",
+    "toolsIntro": "与 LLM Wiki 配合使用的工具：",
+    "tools": [
+      "<strong>Obsidian</strong> — 用 Graph view 浏览 wiki，Dataview 做动态查询",
+      "<strong>Obsidian Web Clipper</strong> — 浏览器插件，把网页文章转为 Markdown 直接存入 <code>raw/</code>",
+      "<strong>qmd</strong> — 本地 Markdown 搜索引擎（BM25 + 向量搜索），wiki 变大后配合 index.md 使用",
+      "<strong>Marp</strong> — Markdown 转幻灯片，从 wiki 内容直接生成演示文稿",
+      "<strong>Git</strong> — Markdown 文件目录天然带版本历史"
+    ]
+  }
+}

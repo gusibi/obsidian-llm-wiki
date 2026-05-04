@@ -1,0 +1,44 @@
+---
+import Base from '../../layouts/Base.astro';
+import { useTranslations } from '../../i18n/utils';
+
+export function getStaticPaths() {
+  return [
+    { params: { locale: 'en' } },
+    { params: { locale: 'zh' } },
+  ];
+}
+
+
+
+
+const locale = Astro.params.locale || 'en';
+const t = useTranslations(locale);
+const d = t.page404;
+const base = locale === 'en' ? '' : `/${locale}`;
+---
+
+<Base title={d.title} description="" page="404" locale={locale}>
+  <nav class="nav" id="nav" role="navigation">
+    <div class="nav__inner">
+      <a href={`${base}/`} class="nav__logo">
+        <div class="nav__logo-icon">W</div>
+        {t.meta.siteName}
+      </a>
+      <ul class="nav__links" id="navLinks" role="menubar" style="display:flex;align-items:center;gap:var(--space-lg);list-style:none;padding:0;margin:0;">
+        <li role="none"><a href={`${base}/`} class="nav__link" role="menuitem">{t.nav.home}</a></li>
+        <li role="none"><a href={`${base}/docs`} class="nav__link" role="menuitem">{t.nav.docs}</a></li>
+        <li role="none"><a href={`${base}/changelog`} class="nav__link" role="menuitem">{t.nav.changelog}</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="page-404">
+    <div class="container">
+      <div class="page-404__code">{d.code}</div>
+      <h1 class="page-404__title">{d.heading}</h1>
+      <p style="color:var(--text-secondary);margin-bottom:var(--space-2xl);" set:html={d.body} />
+      <a href={`${base}/`} class="btn btn--primary">{d.btn}</a>
+    </div>
+  </main>
+</Base>

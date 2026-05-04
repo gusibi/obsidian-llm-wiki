@@ -1,0 +1,35 @@
+# LLM Wiki
+> A personal knowledge compiler powered by AI. Transform raw articles into structured, interconnected wiki entries that compound over time.
+
+## Project
+- Name: LLM Wiki (obsidian-llm-wiki)
+- Version: 0.4.0
+- Author: gusibi
+- License: MIT
+- GitHub: https://github.com/gusibi/obsidian-llm-wiki
+
+## Description
+LLM Wiki is a personal knowledge base building tool that uses LLMs to compile raw articles into structured wiki entries. It has two components: an Obsidian plugin (GUI) and a Claude Code skill (CLI). Core idea: instead of RAG (retrieve-and-forget each query), the LLM reads source material once, distills it, and maintains a growing wiki with cross-references and source attribution. Knowledge compounds over time.
+
+## Pages
+- Home: https://llmwiki.eztoolab.com/ — Landing page with features, workflow, philosophy comparison
+- Documentation: https://llmwiki.eztoolab.com/docs — Full installation and usage guide
+- Changelog: https://llmwiki.eztoolab.com/changelog — Release history
+
+## Core Commands
+- /init: Initialize wiki structure (plugin-native, zero LLM dependency)
+- /ingest: Compile articles into wiki entries (summary, concepts, entities, methods, cross-references)
+- /query: Ask questions grounded in wiki content with wikilink references
+- /lint: Comprehensive wiki health check (contradictions, orphans, stale content, missing attribution)
+- /scan: Lightweight legacy library indexing (titles + first 10 lines only)
+
+## Core Philosophy
+- raw/ is immutable (LLM reads only, never modifies)
+- wiki/ is LLM territory (humans read but don't edit directly)
+- Every claim in wiki must be traceable to source (source: [[filename]])
+- Contradictions are flagged with warning callouts, never silently overwritten
+- Knowledge compounds: each ingest enriches the entire wiki network
+
+## Two Components
+- Obsidian Plugin: GUI inside Obsidian with unified Wiki panel + Chat panel. Communicates via ACP with Claude Code or Cursor.
+- Claude Code Skill: CLI-based. Works in any directory without Obsidian. Same wiki engine, different interface.

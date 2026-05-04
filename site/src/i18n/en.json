@@ -1,0 +1,551 @@
+{
+  "site": {
+    "baseUrl": "https://llmwiki.eztoolab.com",
+    "lang": "en",
+    "langName": "English",
+    "dir": "ltr"
+  },
+  "meta": {
+    "siteName": "LLM Wiki",
+    "ogLocale": "en_US"
+  },
+  "nav": {
+    "home": "Home",
+    "docs": "Docs",
+    "changelog": "Changelog",
+    "switchLangLabel": "中文",
+    "switchLangUrl": "/zh/",
+    "switchLangCode": "zh"
+  },
+  "footer": {
+    "version": "LLM Wiki v0.4.0",
+    "license": "MIT License",
+    "authorLabel": "by",
+    "authorName": "gusibi",
+    "authorUrl": "https://github.com/gusibi",
+    "githubUrl": "https://github.com/gusibi/obsidian-llm-wiki",
+    "friendLinkLabel": "Friends",
+    "friendLinkUrl": "https://onlinestool.com/",
+    "friendLinkName": "Online Tool"
+  },
+  "index": {
+    "title": "LLM Wiki — Compile Your Knowledge. Let AI Maintain the Wiki.",
+    "description": "LLM Wiki is a personal knowledge compiler powered by AI. Transform raw articles into structured wiki entries. Knowledge compounds over time.",
+    "hero": {
+      "tagline": "Personal Knowledge Compiler",
+      "titleHtml": "Compile Your Knowledge.<br>Let AI <em>Maintain</em> the Wiki.",
+      "subtitle": "A personal knowledge base that grows smarter over time. Feed it articles, the LLM reads, distills, cross-references, and maintains the wiki. Knowledge compounds — not just retrieved.",
+      "cta1": "Get Started",
+      "cta1Url": "/docs",
+      "cta2": "View on GitHub",
+      "pipeline": [
+        {
+          "dir": "raw/",
+          "desc": "Your articles"
+        },
+        {
+          "dir": "LLM",
+          "desc": "Reads & distills"
+        },
+        {
+          "dir": "wiki/",
+          "desc": "Structured knowledge"
+        },
+        {
+          "dir": "∞",
+          "desc": "Compounds forever"
+        }
+      ]
+    },
+    "featuresLabel": "Core Operations",
+    "featuresTitle": "Five Commands That Do Everything",
+    "featuresSubtitle": "No complex UI. Five slash commands power the entire knowledge compilation pipeline.",
+    "features": [
+      {
+        "icon": "1",
+        "command": "/init",
+        "title": "Initialize Wiki Structure",
+        "desc": "One command creates the full wiki skeleton—directories, CLAUDE.md schema, indexes, and logs. Plugin-native, zero LLM dependency, completes in milliseconds."
+      },
+      {
+        "icon": "2",
+        "command": "/ingest",
+        "title": "Smart Source Ingestion",
+        "desc": "LLM reads your article, creates summary pages, extracts concepts and entities, adds cross-references, checks for contradictions, updates indexes—all in one go."
+      },
+      {
+        "icon": "3",
+        "command": "/query",
+        "title": "Wiki-Based Q&A",
+        "desc": "Ask questions grounded in your wiki. LLM reads the index, finds relevant pages, synthesizes answers with wikilink references. Good answers get archived as new wiki pages."
+      },
+      {
+        "icon": "4",
+        "command": "/lint",
+        "title": "Health Check",
+        "desc": "Periodic wiki checkup: detects contradictions between pages, orphan pages with no links, stale content, missing attribution, and knowledge gaps. Can auto-fix most issues."
+      },
+      {
+        "icon": "5",
+        "command": "/scan",
+        "title": "Legacy Library Scan",
+        "desc": "Hundreds of old notes? A lightweight scan reads only titles and first 10 lines of each file, generating an index map. Then selectively ingest what matters."
+      },
+      {
+        "icon": "6",
+        "command": "tag audit",
+        "title": "Tag Management",
+        "desc": "AI-powered tag auditing with merge suggestions. Clean up tag sprawl, consolidate duplicates, and maintain a coherent taxonomy across your entire wiki."
+      }
+    ],
+    "stepsLabel": "Workflow",
+    "stepsTitle": "How It Works",
+    "stepsSubtitle": "Five steps from raw articles to a living, growing personal knowledge base.",
+    "steps": [
+      {
+        "num": "1",
+        "command": "/init",
+        "title": "Initialize the Compiler",
+        "desc": "The plugin creates the full wiki skeleton on your vault—directories, the CLAUDE.md schema, index files, and operation logs. No LLM involved. Instant."
+      },
+      {
+        "num": "2",
+        "command": "Drop files in raw/",
+        "title": "Feed It Source Material",
+        "desc": "Put articles, papers, book notes, or web clippings into the <code>raw/</code> directory. Don't worry about organization—the LLM auto-categorizes during ingest."
+      },
+      {
+        "num": "3",
+        "command": "/ingest",
+        "title": "Compile Into Wiki Entries",
+        "desc": "The LLM reads each article, distills key points, and creates structured wiki pages with cross-references and source attribution. One ingest can touch 10–15 pages."
+      },
+      {
+        "num": "4",
+        "command": "/query",
+        "title": "Query Your Growing Knowledge",
+        "desc": "Ask questions. The LLM consults the wiki index, reads relevant pages, and synthesizes answers with traceable references. Archive great answers as new wiki pages."
+      },
+      {
+        "num": "5",
+        "command": "/lint",
+        "title": "Maintain Wiki Health",
+        "desc": "Run periodic health checks. The LLM finds and fixes contradictions, orphan pages, stale content, missing links, and knowledge gaps. Your wiki stays coherent as it grows."
+      }
+    ],
+    "philLabel": "Why Wiki",
+    "philTitle": "Wiki Is Not RAG",
+    "philSubtitle": "Two fundamentally different approaches. One resets every query. The other compounds.",
+    "philOldLabel": "Traditional Approach",
+    "philOldTitle": "RAG: Retrieve & Forget",
+    "philOldFlow": "Upload docs → <span>LLM retrieves fragments</span> → assembles answer from scratch → knowledge <span>not retained</span>",
+    "philOldPoints": [
+      "Knowledge doesn't accumulate between queries",
+      "Each question re-discovers what was already found",
+      "No cross-references between documents",
+      "Contradictions go undetected",
+      "Quality degrades as document volume grows"
+    ],
+    "philNewLabel": "The Wiki Way",
+    "philNewTitle": "Wiki: Compile & Compound",
+    "philNewFlow": "Source files → <span>LLM reads once, distills</span> → updates entity/concept pages → knowledge <span>compounds forever</span>",
+    "philNewPoints": [
+      "Knowledge builds on previous knowledge",
+      "Each ingest enriches the entire wiki network",
+      "Automatic cross-references between all pages",
+      "Contradictions detected and flagged",
+      "Quality improves with every new source added"
+    ],
+    "structLabel": "Architecture",
+    "structTitle": "Four Directories, Four Roles",
+    "structSubtitle": "Clear ownership boundaries prevent wiki decay. Every directory has exactly one writer.",
+    "tree": [
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "raw/",
+        "type": "dir",
+        "comment": "# Your source material — immutable, LLM reads only"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "tech/",
+        "type": "dir",
+        "comment": "# Tech articles, papers, tutorials"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "work/",
+        "type": "dir",
+        "comment": "# Work-related documents"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "reading/",
+        "type": "dir",
+        "comment": "# Book notes, podcasts"
+      },
+      {
+        "indent": "│",
+        "icon": "└──",
+        "name": "general/",
+        "type": "dir",
+        "comment": "# Everything else"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "wiki/",
+        "type": "dir",
+        "comment": "# LLM-maintained knowledge base"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "summaries/",
+        "type": "dir",
+        "comment": "# One summary per source file"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "concepts/",
+        "type": "dir",
+        "comment": "# Cross-source concept synthesis"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "entities/",
+        "type": "dir",
+        "comment": "# People, tools, frameworks"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "methods/",
+        "type": "dir",
+        "comment": "# Reusable how-to guides"
+      },
+      {
+        "indent": "│",
+        "icon": "├──",
+        "name": "comparisons/",
+        "type": "dir",
+        "comment": "# Side-by-side analysis"
+      },
+      {
+        "indent": "│",
+        "icon": "└──",
+        "name": "analysis/",
+        "type": "dir",
+        "comment": "# Deep dives from archived queries"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "drafts/",
+        "type": "dir",
+        "comment": "# Your private scratch space — LLM never touches"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "legacy/",
+        "type": "dir",
+        "comment": "# Frozen archive of old notes — read-only"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "CLAUDE.md",
+        "type": "file",
+        "commentHtml": "# LLM operation schema — the <span class=\"dir-tree__highlight\">real core logic</span>"
+      },
+      {
+        "indent": "",
+        "icon": "├──",
+        "name": "index.md",
+        "type": "file",
+        "comment": "# Master wiki index"
+      },
+      {
+        "indent": "",
+        "icon": "└──",
+        "name": "log.md",
+        "type": "file",
+        "comment": "# Operation timeline"
+      }
+    ],
+    "ownershipCaption": "Ownership Rules",
+    "ownershipCols": [
+      "Directory",
+      "Who Writes",
+      "Who Reads",
+      "Purpose"
+    ],
+    "ownershipRows": [
+      {
+        "dir": "raw/",
+        "write": "You",
+        "writeBadge": "human",
+        "read": "LLM (read-only)",
+        "readBadge": "llm",
+        "purpose": "Immutable source material"
+      },
+      {
+        "dir": "wiki/",
+        "write": "LLM only",
+        "writeBadge": "llm",
+        "read": "Both",
+        "readBadge": "both",
+        "purpose": "Structured knowledge base"
+      },
+      {
+        "dir": "drafts/",
+        "write": "You only",
+        "writeBadge": "human",
+        "read": "You only",
+        "readBadge": "human",
+        "purpose": "Private scratch space"
+      },
+      {
+        "dir": "legacy/",
+        "write": "Nobody (frozen)",
+        "writeBadge": "none",
+        "read": "Both (read-only)",
+        "readBadge": "both",
+        "purpose": "Archived old notes"
+      }
+    ],
+    "compLabel": "Two Flavors",
+    "compTitle": "Plugin or Skill—Your Choice",
+    "compSubtitle": "Same wiki engine, two different interfaces. Pick what fits your workflow.",
+    "compPluginLabel": "Obsidian Users",
+    "compPluginTitle": "Obsidian Plugin",
+    "compPluginDesc": "A unified Wiki panel + Chat panel inside Obsidian. File picker, status badges, one-click init. Communicates with Claude Code or Cursor via ACP.",
+    "compPluginPoints": [
+      "Graphical interface inside Obsidian",
+      "File picker for selecting sources",
+      "Cmd+Shift+C to open chat instantly"
+    ],
+    "compSkillLabel": "CLI / Any Editor",
+    "compSkillTitle": "Claude Code Skill",
+    "compSkillDesc": "A Claude Code skill that works in any directory. No Obsidian required. Initialize a wiki, ingest sources, query, lint—all from the terminal.",
+    "compSkillPoints": [
+      "Zero dependencies beyond Claude Code",
+      "Works in any directory, any editor",
+      "Perfect for batch processing"
+    ],
+    "ctaTitle": "Ready to Compile Your Knowledge?",
+    "ctaSubtitle": "Start with an empty vault. End with a living, growing personal wiki that compounds over time.",
+    "ctaBtn1": "Read the Docs",
+    "ctaBtn1Url": "/docs",
+    "ctaBtn2": "Star on GitHub"
+  },
+  "docs": {
+    "title": "Documentation — LLM Wiki",
+    "description": "Complete documentation for LLM Wiki. Installation guide, usage instructions for all commands, CLAUDE.md schema reference, design decisions.",
+    "heading": "Documentation",
+    "subheading": "Everything you need to install, configure, and master LLM Wiki."
+  },
+  "changelog": {
+    "title": "Changelog — LLM Wiki",
+    "description": "Release history and changelog for LLM Wiki. Track new features, improvements, and bug fixes.",
+    "heading": "Changelog",
+    "subheading": "All notable changes to LLM Wiki."
+  },
+  "page404": {
+    "title": "404 — Page Not Found | LLM Wiki",
+    "code": "404",
+    "heading": "This page hasn't been compiled yet.",
+    "body": "Like an un-ingested article in <code>raw/</code>, this URL points to nothing. Try the <a href=\"/\">home page</a> or <a href=\"/docs\">documentation</a>.",
+    "btn": "Back to Home"
+  },
+  "docsContent": {
+    "tocTitle": "On this page",
+    "quickStartTitle": "Quick Start",
+    "quickStartCode": "# Option 1: Obsidian Plugin\n1. Install the plugin into Obsidian\n2. Open Chat panel (Cmd+Shift+C)\n3. Type /init\n\n# Option 2: Claude Code Skill\n1. Add the llm-wiki skill to Claude Code\n2. Open any directory\n3. Say \"initialize a wiki here\"",
+    "quickStartAfter": "The <code>/init</code> command creates all directories, <code>CLAUDE.md</code>, <code>index.md</code>, and <code>log.md</code> — your wiki skeleton is ready. Drop an article into <code>raw/</code>, then type <code>/ingest raw/your-article.md</code> to see the magic.",
+    "installTitle": "Installation",
+    "installPluginTitle": "Obsidian Plugin",
+    "installPluginSteps": [
+      "Download <code>main.js</code>, <code>manifest.json</code>, and <code>styles.css</code> from the <a href=\"https://github.com/gusibi/obsidian-llm-wiki/releases\">latest release</a>",
+      "Place them in <code>.obsidian/plugins/obsidian-llm-wiki/</code> inside your vault",
+      "Enable \"LLM Wiki\" in Obsidian Settings → Community Plugins",
+      "Install <a href=\"https://github.com/anthropics/claude-code\">Claude Code</a> or <a href=\"https://cursor.com\">Cursor</a>",
+      "Install the ACP bridge: <code>npm install -g @agentclientprotocol/claude-agent-acp</code>",
+      "In plugin settings, configure the ACP executable path"
+    ],
+    "installSkillTitle": "Claude Code Skill",
+    "installSkillSteps": [
+      "Copy <code>skills/llm-wiki/</code> to your Claude Code skills directory",
+      "Restart Claude Code (or reload skills)",
+      "Navigate to any directory and say <em>\"initialize a wiki here\"</em>"
+    ],
+    "installSkillAfter": "The skill creates the same wiki structure — no Obsidian required. Works with any text editor.",
+    "installTip": "<strong>Recommendation:</strong> Use the plugin if you're an Obsidian user for a smoother workflow with file picker. Use the skill if you prefer the terminal or use a different editor.",
+    "comparisonTitle": "Plugin vs Skill",
+    "comparisonCols": [
+      "",
+      "Obsidian Plugin",
+      "Claude Code Skill"
+    ],
+    "comparisonRows": [
+      {
+        "aspect": "Interface",
+        "plugin": "GUI inside Obsidian",
+        "skill": "Terminal / Claude Code chat"
+      },
+      {
+        "aspect": "File Picker",
+        "plugin": "Graphical file selector",
+        "skill": "Manual path input"
+      },
+      {
+        "aspect": "Wiki Status",
+        "plugin": "Built-in status panel",
+        "skill": "Ask LLM for status"
+      },
+      {
+        "aspect": "Shortcuts",
+        "plugin": "Cmd+Shift+C/E/S",
+        "skill": "Standard Claude Code"
+      },
+      {
+        "aspect": "Setup",
+        "plugin": "Plugin install + ACP bridge",
+        "skill": "Drop skill folder"
+      },
+      {
+        "aspect": "Works Without Obsidian",
+        "plugin": "No",
+        "skill": "Yes"
+      },
+      {
+        "aspect": "Batch Operations",
+        "plugin": "One at a time",
+        "skill": "Scriptable"
+      }
+    ],
+    "commandsTitle": "Core Operations",
+    "commandsIntro": "Five slash commands power the entire knowledge compilation pipeline. No complex UI.",
+    "initTitle": "/init — Initialize Wiki Structure",
+    "initBody": "The first command you'll run. Creates the complete wiki skeleton — all directories, <code>CLAUDE.md</code> schema, <code>index.md</code>, and <code>log.md</code>. <strong>Plugin-native execution</strong> via Obsidian's Vault API, zero LLM dependency, completes in milliseconds.",
+    "initCode": "Vault/\n├── raw/          (tech/, work/, reading/, general/)\n├── wiki/         (summaries/, concepts/, entities/, methods/, comparisons/, analysis/)\n├── drafts/\n├── legacy/\n├── CLAUDE.md     ← LLM operation schema\n├── index.md      ← Master wiki index\n└── log.md        ← Operation timeline",
+    "ingestTitle": "/ingest — Compile Articles Into Wiki",
+    "ingestBody": "The core operation. Feed an article, the LLM compiles it into the wiki. The ingest workflow:",
+    "ingestSteps": [
+      "Read the full source file and review the existing wiki index",
+      "<strong>Propose a processing plan</strong> (not ask questions) — suggested summary name, concepts/entities to create or update, risk notes — in under 10 lines",
+      "Wait for your one-line approval (\"agreed\" / \"change X\" / \"skip Y\")",
+      "Execute all file operations in one go: create summary page, update/create concept pages, update/create entity pages, extract methodology if applicable, add cross-references, check for contradictions, update index and log"
+    ],
+    "ingestUsage": "/ingest raw/tech/transformer-paper.md",
+    "ingestAfter": "One ingest can touch 10–15 wiki pages. Source attribution is automatic — every paragraph annotated with <code>(source: [[summary-filename]])</code>.",
+    "queryTitle": "/query — Wiki-Based Q&A",
+    "queryBody": "Ask questions grounded in your wiki. The LLM reads the index, finds relevant pages, reads them, and synthesizes answers with wikilink citations. If the answer is valuable and reusable, it can be archived as a new wiki page in <code>wiki/analysis/</code>. Only archived queries are logged.",
+    "queryUsage": "/query How does self-attention differ from cross-attention?",
+    "lintTitle": "/lint — Wiki Health Check",
+    "lintBody": "A comprehensive audit that checks for contradictions, orphan pages, stale content, missing pages, missing attribution, knowledge gaps, and method quality. The LLM auto-fixes what it can (merging duplicates, renaming files, adding missing links) and reports the rest in <code>wiki/lint-report.md</code>. Run it weekly.",
+    "lintChecks": [
+      "<strong>Contradictions</strong> between pages — flagged with <code>[!warning]</code>",
+      "<strong>Orphan pages</strong> with no incoming links",
+      "<strong>Stale content</strong> superseded by newer sources",
+      "<strong>Missing pages</strong> for concepts that are mentioned but lack dedicated pages",
+      "<strong>Missing attribution</strong> — content without source references",
+      "<strong>Knowledge gaps</strong> with suggested search directions",
+      "<strong>Method quality</strong> — validates method pages against quality standards"
+    ],
+    "scanTitle": "/scan — Legacy Library Indexing",
+    "scanBody": "For existing collections of hundreds of old notes. A <em>lightweight scan</em> — reads only titles and first 10 lines of each file — and generates an index map in <code>legacy-index.md</code>. Later, selectively migrate interesting items to <code>raw/</code> for full ingest.",
+    "scanWarning": "<strong>Don't bulk-ingest legacy content.</strong> The recommended strategy: scan first, ingest new content as it comes, selectively migrate legacy items by topic when you need deep coverage.",
+    "tagAuditTitle": "Tag Audit",
+    "tagAuditBody": "Ask the LLM to audit your wiki's tags. It scans all frontmatter tags, identifies duplicates and near-duplicates, and suggests merges. You approve and it applies changes across all pages.<br><br><code>audit the tags in wiki/</code>",
+    "claudeMdTitle": "The CLAUDE.md Schema",
+    "claudeMdIntro": "<code>CLAUDE.md</code> is the most important file in the system. It's not a README — it's the <strong>LLM operation schema</strong> that Claude Code reads automatically on startup. It defines the directory structure, ownership rules, wiki page format, operation procedures, and quality standards. Think of it as the compiler configuration file — edit it and the LLM adapts without any code changes.",
+    "claudeMdDefinesLabel": "What CLAUDE.md defines:",
+    "claudeMdDefines": [
+      "<strong>Directory structure and ownership rules</strong> — who can write where (raw/ is immutable, wiki/ is LLM territory, drafts/ is human-only)",
+      "<strong>Wiki page format</strong> — required YAML frontmatter with title, tags, sources, created, updated",
+      "<strong>File naming</strong> — English lowercase kebab-case for all wiki files",
+      "<strong>Operation procedures</strong> — step-by-step workflows for ingest, query, lint, and scan",
+      "<strong>Methodology quality standards</strong> — three entry criteria, five self-check questions, mandatory page skeleton",
+      "<strong>Wikilink rules</strong> — use filenames only, never include directory paths",
+      "<strong>Ten iron rules</strong> — never modify raw/, always update index after changes, one ingest at a time, etc."
+    ],
+    "claudeMdPrinciplesLabel": "Key design principles baked into the schema:",
+    "claudeMdPrinciples": [
+      "<strong>raw/ is immutable</strong> — LLM reads source files but never modifies, moves, or deletes them",
+      "<strong>wiki/ is LLM territory</strong> — humans read wiki pages but don't edit them directly",
+      "<strong>Knowledge must be traceable</strong> — every claim links back to its original source via wikilinks",
+      "<strong>Contradictions are flagged, not silenced</strong> — conflicts get <code>[!warning]</code> callouts, never silently overwritten",
+      "<strong>Log is append-only</strong> — operations are recorded for auditing; use <code>tail</code> to read recent entries"
+    ],
+    "wikiTypesTitle": "Wiki Page Types",
+    "wikiTypesIntro": "The LLM maintains six types of pages in <code>wiki/</code>:",
+    "wikiTypes": [
+      "<strong>Summary</strong> (<code>wiki/summaries/</code>) — one per ingested source. One-to-one mapping to raw files. Filename uses English kebab-case based on topic (never identical to raw filename).",
+      "<strong>Concept</strong> (<code>wiki/concepts/</code>) — cross-source synthesis for each important concept or theme. Every paragraph annotated with source.",
+      "<strong>Entity</strong> (<code>wiki/entities/</code>) — pages for notable people, tools, frameworks, organizations. Only for public figures — article authors without public visibility go in the summary's frontmatter author field.",
+      "<strong>Method</strong> (<code>wiki/methods/</code>) — reusable how-to guides. Must satisfy three entry criteria: actionable, transferable, non-trivial. Strict separation from concept pages (methods answer \"how to\", concepts answer \"what is\").",
+      "<strong>Comparison</strong> (<code>wiki/comparisons/</code>) — side-by-side analysis of related topics.",
+      "<strong>Analysis</strong> (<code>wiki/analysis/</code>) — deep explorations, typically archived from good query answers."
+    ],
+    "methodsTitle": "Methodology Quality Standards",
+    "methodsIntro": "Method pages have the strictest quality bar in the wiki. Before creating a method page, content must pass three entry criteria:",
+    "methodsCriteria": [
+      "<strong>Actionable</strong> — readers can follow step by step without understanding the background. \"Do X; if Y, do Z\", not \"X is important\".",
+      "<strong>Transferable</strong> — steps work beyond the source article's specific context. Product-specific manuals don't count.",
+      "<strong>Non-trivial</strong> — at least one step, rule, or anti-pattern is non-obvious. \"Test before deploying\" is common sense, not methodology."
+    ],
+    "methodsNote": "All three must be satisfied. If not, no method page is created — <em>better zero method pages than a concept page copied under the methods directory</em>.",
+    "attributionTitle": "Source Attribution",
+    "attributionBody": "Wiki's core value is knowledge traceability. Every piece of information must link back to its original source:",
+    "attributionList": [
+      "<strong>Summary pages</strong> — frontmatter <code>sources</code> points to the raw source file",
+      "<strong>Concept / Entity / Method pages</strong> — frontmatter <code>sources</code> lists all contributing raw files; body text uses inline citations: <code>(source: [[summary-filename]])</code>",
+      "<strong>Citation filenames must match actual existing files</strong> — never invent or guess filenames"
+    ],
+    "designDecisionsTitle": "Design Decisions",
+    "whyNotRagTitle": "Why not RAG?",
+    "whyNotRagBody": "For personal knowledge bases under 10,000 notes, a simple <code>index.md</code> works better than vector search. <strong>Zero infrastructure</strong> — no embedding pipeline or vector database. <strong>Deterministic</strong> — the index is human-readable and debuggable. <strong>Context-rich</strong> — LLM reads complete pages, not retrieved fragments. <strong>Cross-referenced</strong> — wikilinks create a browsable graph, not isolated chunks. When the wiki grows beyond the context window, RAG can complement — but start simple.",
+    "whyClaudeMdTitle": "Why CLAUDE.md instead of hardcoded logic?",
+    "whyClaudeMdBody": "Everyone's knowledge needs differ. Some want a <code>wiki/tutorials/</code> directory. Some don't need <code>legacy/</code>. Some prefer English, others Chinese. CLAUDE.md is an editable configuration file — change it and the LLM adapts. No plugin rebuild needed. It's also reusable: the same CLAUDE.md works with Claude Code, Cursor, or any LLM agent that respects the format.",
+    "whyOwnershipTitle": "Why strict directory ownership?",
+    "whyOwnershipBody": "Unclear ownership is the root cause of wiki decay. When both human and AI edit the same files, trust erodes — you can't tell what's AI-generated vs human-curated. Clear boundaries: <code>wiki/</code> is always LLM-maintained, so you can trust its structure and attribution. <code>drafts/</code> is always human-only, so you have a safe scratch space.",
+    "whyNoDiscussionTitle": "Why no discussion during ingest?",
+    "whyNoDiscussionBody": "Early versions had the LLM \"discuss key points\" before executing. Result: LLMs produced elegant analysis but created <em>zero files</em>. The fix: remove all discussion steps. The LLM proposes a brief plan (under 10 lines), you approve or adjust in one line, then it executes everything automatically. Think <code>make build</code> — it should produce compiled output, not a document about what it plans to compile.",
+    "dailyLoopTitle": "Daily Workflow Loop",
+    "dailyLoopIntro": "Once your wiki is set up, the daily rhythm is simple:",
+    "dailyLoop": [
+      "<strong>New article</strong> → drop into <code>raw/</code> → <code>/ingest</code> → wiki auto-updates",
+      "<strong>Question</strong> → <code>/query</code> → good answer → archive as wiki page",
+      "<strong>Periodic</strong> → <code>/lint</code> → maintain wiki health",
+      "<strong>Old notes</strong> → <code>legacy/</code> → <code>/scan</code> → index → selectively migrate to <code>raw/</code>"
+    ],
+    "tipsTitle": "Tips & Best Practices",
+    "tips": [
+      "<strong>Ingest one article at a time.</strong> The LLM produces better results when focused on a single source.",
+      "<strong>Participate during ingest.</strong> The LLM proposes a plan first. Use your one-line response to steer emphasis.",
+      "<strong>Archive great query answers.</strong> A good answer that only lives in chat history is lost. File it.",
+      "<strong>Run lint weekly.</strong> Regular maintenance prevents accumulated mess — like running tests on code.",
+      "<strong>Use Git.</strong> Wiki is a directory of Markdown files. Version control gives history, diff, and safety.",
+      "<strong>Let the LLM rename files.</strong> Don't manually organize wiki pages. Lint catches bad names and the LLM fixes all references.",
+      "<strong>Don't duplicate CLAUDE.md in prompts.</strong> Claude Code reads it automatically on startup. Redundant injection wastes tokens and increases confusion.",
+      "<strong>Use XML tags for prompt isolation.</strong> Wrap raw source content in <code>&lt;raw_input role=\"data\"&gt;</code> tags to prevent the LLM from executing article content as instructions."
+    ],
+    "toolsTitle": "Companion Tools",
+    "toolsIntro": "Tools that work well with LLM Wiki:",
+    "tools": [
+      "<strong>Obsidian</strong> — browse your wiki with Graph view, Dataview for dynamic queries",
+      "<strong>Obsidian Web Clipper</strong> — browser extension to save web pages as Markdown directly into <code>raw/</code>",
+      "<strong>qmd</strong> — local Markdown search engine (BM25 + vector), complement index.md when wiki grows large",
+      "<strong>Marp</strong> — Markdown-to-slides, generate presentations from wiki content",
+      "<strong>Git</strong> — natural version control for a directory of Markdown files"
+    ]
+  }
+}

@@ -1,0 +1,220 @@
+---
+import Base from '../../layouts/Base.astro';
+import { useTranslations } from '../../i18n/utils';
+
+export function getStaticPaths() {
+  return [
+    { params: { locale: 'en' } },
+    { params: { locale: 'zh' } },
+  ];
+}
+
+
+
+
+const locale = Astro.params.locale || 'en';
+const t = useTranslations(locale);
+const d = t.index;
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'LLM Wiki',
+  applicationCategory: 'KnowledgeManagement',
+  operatingSystem: 'Cross-platform',
+  description: d.description,
+  author: { '@type': 'Person', name: t.footer.authorName },
+  codeRepository: t.footer.githubUrl,
+  license: 'https://opensource.org/licenses/MIT',
+  version: '0.4.0',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+};
+---
+
+<Base title={d.title} description={d.description} page="home" locale={locale} structuredData={structuredData}>
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <p class="hero__tagline animate-in animate-in--1">{d.hero.tagline}</p>
+        <h1 class="hero__title animate-in animate-in--2" set:html={d.hero.titleHtml} />
+        <p class="hero__subtitle animate-in animate-in--3">{d.hero.subtitle}</p>
+        <div class="hero__actions animate-in animate-in--4">
+          <a href={d.hero.cta1Url} class="btn btn--primary">{d.hero.cta1}</a>
+          <a href={t.footer.githubUrl} class="btn btn--secondary" target="_blank" rel="noopener">{d.hero.cta2}</a>
+        </div>
+
+        <div class="hero__pipeline animate-in animate-in--5">
+          {d.hero.pipeline.map((item, i) => (
+            <>
+              {i > 0 && <span class="pipeline-arrow">&rarr;</span>}
+              <div class="pipeline-node">
+                <div class="pipeline-node__dir">{item.dir}</div>
+                <div class="pipeline-node__desc">{item.desc}</div>
+              </div>
+            </>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features section" id="features">
+      <div class="container">
+        <span class="section-label">{d.featuresLabel}</span>
+        <h2 class="section-title">{d.featuresTitle}</h2>
+        <p class="section-subtitle">{d.featuresSubtitle}</p>
+        <div class="features__grid">
+          {d.features.map(f => (
+            <article class="feature-card">
+              <div class="feature-card__icon">{f.icon}</div>
+              <span class="feature-card__command">{f.command}</span>
+              <h3 class="feature-card__title">{f.title}</h3>
+              <p class="feature-card__desc">{f.desc}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="section" id="how-it-works">
+      <div class="container container--text">
+        <span class="section-label">{d.stepsLabel}</span>
+        <h2 class="section-title">{d.stepsTitle}</h2>
+        <p class="section-subtitle">{d.stepsSubtitle}</p>
+        <ol class="steps__list">
+          {d.steps.map(s => (
+            <li class="step">
+              <div class="step__num">{s.num}</div>
+              <div class="step__content">
+                <span class="step__command">{s.command}</span>
+                <h3 class="step__title">{s.title}</h3>
+                <p class="step__desc" set:html={s.desc} />
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- Philosophy -->
+    <section class="philosophy section" id="philosophy">
+      <div class="container">
+        <span class="section-label">{d.philLabel}</span>
+        <h2 class="section-title">{d.philTitle}</h2>
+        <p class="section-subtitle">{d.philSubtitle}</p>
+        <div class="comparison comparison--with-divider">
+          <div class="compare-card compare-card--old">
+            <span class="compare-card__label">{d.philOldLabel}</span>
+            <h3 class="compare-card__title">{d.philOldTitle}</h3>
+            <div class="compare-card__flow" set:html={d.philOldFlow} />
+            <ul class="compare-card__list">
+              {d.philOldPoints.map(p => <li>{p}</li>)}
+            </ul>
+          </div>
+          <div class="compare-divider">vs</div>
+          <div class="compare-card compare-card--new">
+            <span class="compare-card__label">{d.philNewLabel}</span>
+            <h3 class="compare-card__title">{d.philNewTitle}</h3>
+            <div class="compare-card__flow" set:html={d.philNewFlow} />
+            <ul class="compare-card__list">
+              {d.philNewPoints.map(p => <li>{p}</li>)}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Directory Structure -->
+    <section class="section" id="structure">
+      <div class="container">
+        <span class="section-label">{d.structLabel}</span>
+        <h2 class="section-title">{d.structTitle}</h2>
+        <p class="section-subtitle">{d.structSubtitle}</p>
+        <div class="dir-tree" role="figure">
+          <span class="dir-tree__line"><span class="dir-tree__dir">Vault/</span></span><br>
+          {d.tree.map(item => [
+            <span class="dir-tree__line">
+              {item.indent}   {item.icon} <span class={`dir-tree__${item.type}`}>{item.name}</span>                    {' '}
+              <span class="dir-tree__comment" set:html={item.commentHtml || item.comment} />
+            </span>,
+            <br />,
+          ])}
+        </div>
+        <div class="ownership">
+          <table class="ownership-table">
+            <caption style="text-align:left;margin-bottom:var(--space-md);color:var(--text-secondary);font-size:0.9rem;">
+              {d.ownershipCaption}
+            </caption>
+            <thead>
+              <tr>
+                {d.ownershipCols.map(col => <th scope="col">{col}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {d.ownershipRows.map(row => (
+                <tr>
+                  <td><code>{row.dir}</code></td>
+                  <td><span class={`badge badge--${row.writeBadge}`}>{row.write}</span></td>
+                  <td><span class={`badge badge--${row.readBadge}`}>{row.read}</span></td>
+                  <td>{row.purpose}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two Components -->
+    <section class="section" id="components" style="background: var(--bg-secondary);">
+      <div class="container">
+        <span class="section-label">{d.compLabel}</span>
+        <h2 class="section-title">{d.compTitle}</h2>
+        <p class="section-subtitle">{d.compSubtitle}</p>
+        <div class="comparison" style="align-items: stretch;">
+          <div class="compare-card compare-card--new" style="opacity:1;">
+            <span class="compare-card__label" style="color: var(--accent);">{d.compPluginLabel}</span>
+            <h3 class="compare-card__title" style="font-size:1.3rem;">{d.compPluginTitle}</h3>
+            <p style="color:var(--text-secondary);margin-bottom:var(--space-lg);font-size:0.95rem;">{d.compPluginDesc}</p>
+            <ul style="list-style:none;padding:0;">
+              {d.compPluginPoints.map(p => (
+                <li style="padding-left:var(--space-xl);position:relative;">
+                  <span style="position:absolute;left:0;color:var(--green);">&#10003;</span> {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div class="compare-card" style="opacity:1;">
+            <span class="compare-card__label" style="color: var(--accent-2);">{d.compSkillLabel}</span>
+            <h3 class="compare-card__title" style="font-size:1.3rem;">{d.compSkillTitle}</h3>
+            <p style="color:var(--text-secondary);margin-bottom:var(--space-lg);font-size:0.95rem;">{d.compSkillDesc}</p>
+            <ul style="list-style:none;padding:0;">
+              {d.compSkillPoints.map(p => (
+                <li style="padding-left:var(--space-xl);position:relative;">
+                  <span style="position:absolute;left:0;color:var(--green);">&#10003;</span> {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta section" id="get-started">
+      <div class="container">
+        <h2 class="cta__title">{d.ctaTitle}</h2>
+        <p class="cta__subtitle">{d.ctaSubtitle}</p>
+        <div class="cta__actions">
+          <a href={d.ctaBtn1Url} class="btn btn--primary">{d.ctaBtn1}</a>
+          <a href={t.footer.githubUrl} class="btn btn--secondary" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z"/></svg>
+            {d.ctaBtn2}
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</Base>

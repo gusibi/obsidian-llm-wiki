@@ -1,0 +1,192 @@
+---
+import Base from '../../layouts/Base.astro';
+import { useTranslations } from '../../i18n/utils';
+
+export function getStaticPaths() {
+  return [
+    { params: { locale: 'en' } },
+    { params: { locale: 'zh' } },
+  ];
+}
+
+const locale = Astro.params.locale || 'en';
+const t = useTranslations(locale);
+const d = t.docs;
+const c = t.docsContent;
+---
+
+<Base title={d.title} description={d.description} page="docs" locale={locale} ogType="article">
+  <main class="docs">
+    <div class="container">
+      <header class="docs__header">
+        <h1>{d.heading}</h1>
+        <p style="color:var(--text-secondary);font-size:1.15rem;">{d.subheading}</p>
+      </header>
+
+      <div class="docs__body">
+        <!-- TOC -->
+        <nav aria-label="Table of contents" style="margin-bottom:var(--space-3xl);">
+          <h3 style="margin-bottom:var(--space-sm);">{c.tocTitle}</h3>
+          <ul style="list-style:none;padding:0;">
+            <li><a href="#quick-start">{c.quickStartTitle}</a></li>
+            <li><a href="#installation">{c.installTitle}</a></li>
+            <li><a href="#plugin-vs-skill">{c.comparisonTitle}</a></li>
+            <li><a href="#commands">{c.commandsTitle}</a></li>
+            <li><a href="#claude-md">{c.claudeMdTitle}</a></li>
+            <li><a href="#wiki-types">{c.wikiTypesTitle}</a></li>
+            <li><a href="#methods">{c.methodsTitle}</a></li>
+            <li><a href="#attribution">{c.attributionTitle}</a></li>
+            <li><a href="#design-decisions">{c.designDecisionsTitle}</a></li>
+            <li><a href="#daily-loop">{c.dailyLoopTitle}</a></li>
+            <li><a href="#tips">{c.tipsTitle}</a></li>
+            <li><a href="#tools">{c.toolsTitle}</a></li>
+          </ul>
+        </nav>
+
+        <!-- Quick Start -->
+        <h2 id="quick-start">{c.quickStartTitle}</h2>
+        <pre><code>{c.quickStartCode}</code></pre>
+        <p set:html={c.quickStartAfter} />
+
+        <!-- Installation -->
+        <h2 id="installation">{c.installTitle}</h2>
+
+        <h3>{c.installPluginTitle}</h3>
+        <ol>
+          {c.installPluginSteps.map((s: string) => <li set:html={s} />)}
+        </ol>
+
+        <h3>{c.installSkillTitle}</h3>
+        <ol>
+          {c.installSkillSteps.map((s: string) => <li set:html={s} />)}
+        </ol>
+        <p set:html={c.installSkillAfter} />
+
+        <div class="doc-callout doc-callout--tip" set:html={c.installTip} />
+
+        <!-- Plugin vs Skill -->
+        <h2 id="plugin-vs-skill">{c.comparisonTitle}</h2>
+        <table class="doc-table">
+          <thead>
+            <tr>
+              {c.comparisonCols.map((col: string) => <th scope="col">{col}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {c.comparisonRows.map((row: any) => (
+              <tr>
+                <td>{row.aspect}</td>
+                <td>{row.plugin}</td>
+                <td>{row.skill}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <!-- Core Commands -->
+        <h2 id="commands">{c.commandsTitle}</h2>
+        <p>{c.commandsIntro}</p>
+
+        <h3>{c.initTitle}</h3>
+        <p set:html={c.initBody} />
+        <pre><code>{c.initCode}</code></pre>
+
+        <h3>{c.ingestTitle}</h3>
+        <p set:html={c.ingestBody} />
+        <ol>
+          {c.ingestSteps.map((s: string) => <li set:html={s} />)}
+        </ol>
+        <pre><code>{c.ingestUsage}</code></pre>
+        <p set:html={c.ingestAfter} />
+
+        <h3>{c.queryTitle}</h3>
+        <p set:html={c.queryBody} />
+        <pre><code>{c.queryUsage}</code></pre>
+
+        <h3>{c.lintTitle}</h3>
+        <p set:html={c.lintBody} />
+        <ul>
+          {c.lintChecks.map((s: string) => <li set:html={s} />)}
+        </ul>
+
+        <h3>{c.scanTitle}</h3>
+        <p set:html={c.scanBody} />
+        <div class="doc-callout doc-callout--warning" set:html={c.scanWarning} />
+
+        <h3>{c.tagAuditTitle}</h3>
+        <p set:html={c.tagAuditBody} />
+
+        <!-- CLAUDE.md -->
+        <h2 id="claude-md">{c.claudeMdTitle}</h2>
+        <p set:html={c.claudeMdIntro} />
+
+        <p><strong>{c.claudeMdDefinesLabel}</strong></p>
+        <ul>
+          {c.claudeMdDefines.map((s: string) => <li set:html={s} />)}
+        </ul>
+
+        <p><strong>{c.claudeMdPrinciplesLabel}</strong></p>
+        <ul>
+          {c.claudeMdPrinciples.map((s: string) => <li set:html={s} />)}
+        </ul>
+
+        <!-- Wiki Page Types -->
+        <h2 id="wiki-types">{c.wikiTypesTitle}</h2>
+        <p set:html={c.wikiTypesIntro} />
+        <ul>
+          {c.wikiTypes.map((s: string) => <li set:html={s} />)}
+        </ul>
+
+        <!-- Methodology -->
+        <h2 id="methods">{c.methodsTitle}</h2>
+        <p set:html={c.methodsIntro} />
+        <ol>
+          {c.methodsCriteria.map((s: string) => <li set:html={s} />)}
+        </ol>
+        <p set:html={c.methodsNote} />
+
+        <!-- Source Attribution -->
+        <h2 id="attribution">{c.attributionTitle}</h2>
+        <p set:html={c.attributionBody} />
+        <ul>
+          {c.attributionList.map((s: string) => <li set:html={s} />)}
+        </ul>
+
+        <!-- Design Decisions -->
+        <h2 id="design-decisions">{c.designDecisionsTitle}</h2>
+
+        <h3>{c.whyNotRagTitle}</h3>
+        <p set:html={c.whyNotRagBody} />
+
+        <h3>{c.whyClaudeMdTitle}</h3>
+        <p set:html={c.whyClaudeMdBody} />
+
+        <h3>{c.whyOwnershipTitle}</h3>
+        <p set:html={c.whyOwnershipBody} />
+
+        <h3>{c.whyNoDiscussionTitle}</h3>
+        <p set:html={c.whyNoDiscussionBody} />
+
+        <!-- Daily Workflow -->
+        <h2 id="daily-loop">{c.dailyLoopTitle}</h2>
+        <p>{c.dailyLoopIntro}</p>
+        <ol>
+          {c.dailyLoop.map((s: string) => <li set:html={s} />)}
+        </ol>
+
+        <!-- Tips -->
+        <h2 id="tips">{c.tipsTitle}</h2>
+        <ul>
+          {c.tips.map((s: string) => <li set:html={s} />)}
+        </ul>
+
+        <!-- Companion Tools -->
+        <h2 id="tools">{c.toolsTitle}</h2>
+        <p>{c.toolsIntro}</p>
+        <ul>
+          {c.tools.map((s: string) => <li set:html={s} />)}
+        </ul>
+      </div>
+    </div>
+  </main>
+</Base>
