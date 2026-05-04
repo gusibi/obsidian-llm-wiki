@@ -1,10 +1,12 @@
 import {
   App,
   Editor,
+  Modal,
   Plugin,
   PluginSettingTab,
   Setting,
   Notice,
+  TextAreaComponent,
   TFile,
   WorkspaceLeaf,
 } from "obsidian";
@@ -243,7 +245,7 @@ export default class ClaudeACPPlugin extends Plugin {
 
   private async showEditDialog(fileName: string): Promise<string> {
     return new Promise((resolve) => {
-      const modal = new (this.app as any).Modal();
+      const modal = new Modal(this.app);
       modal.setTitle(`AI Edit: ${fileName}`);
 
       const content = modal.contentEl.createEl("div", { cls: "edit-dialog" });
@@ -252,7 +254,7 @@ export default class ClaudeACPPlugin extends Plugin {
         text: "What would you like Claude to do with this file?",
       });
 
-      const instructionArea = new (this.app as any).TextAreaComponent(content);
+      const instructionArea = new TextAreaComponent(content);
       instructionArea.inputEl.placeholder =
         'e.g., "Improve the structure and fix typos"...';
       instructionArea.inputEl.rows = 4;
@@ -282,6 +284,66 @@ export default class ClaudeACPPlugin extends Plugin {
     });
   }
 
+  /**
+   * Show confirm dialog
+   */
+  private async showConfirmDialog(title: string, message: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const modal = new Modal(this.app);
+      modal.setTitle(title);
+
+      const content = modal.contentEl.createEl("div");
+      content.createEl("p", { text: message });
+
+      const buttonContainer = content.createEl("div", {
+        cls: "dialog-buttons",
+      });
+
+      const okButton = buttonContainer.createEl("button", {
+        text: "Yes",
+        cls: "mod-cta",
+      });
+      okButton.onclick = () => {
+        resolve(true);
+        modal.close();
+      };
+
+      const cancelButton = buttonContainer.createEl("button", {
+        text: "No",
+      });
+      cancelButton.onclick = () => {
+        resolve(false);
+        modal.close();
+      };
+
+      modal.open();
+    });
+  }
+
+  /**
+   * Show message modal
+   */
+  private showMessageModal(title: string, message: string) {
+    const modal = new Modal(this.app);
+    modal.setTitle(title);
+
+    const content = modal.contentEl.createEl("div");
+    content.style.whiteSpace = "pre-wrap";
+    content.style.fontFamily = "monospace";
+    content.style.fontSize = "14px";
+    content.style.lineHeight = "1.6";
+    content.textContent = message;
+
+    const closeButton = content.createEl("button", {
+      text: "Close",
+      cls: "mod-cta",
+      attr: { style: "margin-top: 20px;" },
+    });
+    closeButton.onclick = () => modal.close();
+
+    modal.open();
+  }
+
   private setupFileMonitoring() {
     this.app.workspace.onLayoutReady(() => {
       this.fileMonitorReady = true;
@@ -297,6 +359,104 @@ export default class ClaudeACPPlugin extends Plugin {
       this.app.vault.on("create", (file) => {
         this.notifyFileChange(file, "created");
       }),
+    );
+
+    // 添加文件菜单事件
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (file instanceof TFile && file.extension === "md") {
+          menu.addItem((item) => {
+            item
+              .setTitle("🏷️ Generate Tags")
+              .setIcon("tag")
+              .onClick(async () => {
+                if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+                  new Notice(`Please connect to ${this.getProviderLabel()} first`);
+                  return;
+                }
+
+                try {
+                  new Notice("🔄 Generating tags...");
+                  const content = await this.app.vault.read(file);
+                  const tags = await this.claudeConnection.analyzeTags(file.path, content);
+
+                  if (tags.length === 0) {
+                    new Notice("No tags generated");
+                    return;
+                  }
+
+                  const message = `Generated tags:\n${tags.map(tag => `• ${tag}`).join("\n")}\n\nApply these tags?`;
+                  const shouldApply = await this.showConfirmDialog("Apply Tags?", message);
+
+                  if (shouldApply) {
+                    const { VaultFileSystemAdapter } = await import("./src/vault-adapter");
+                    const vaultAdapter = new VaultFileSystemAdapter(this.app);
+                    await vaultAdapter.updateFileTags(file.path, tags);
+                    new Notice(`✅ ${tags.length} tags applied`);
+                  }
+                } catch (error: any) {
+                  new Notice(`❌ Tag generation failed: ${error.message}`);
+                }
+              });
+          });
+
+          menu.addItem((item) => {
+            item
+              .setTitle("🔍 Audit Tags")
+              .setIcon("search")
+              .onClick(async () => {
+                if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+                  new Notice(`Please connect to ${this.getProviderLabel()} first`);
+                  return;
+                }
+
+                try {
+                  new Notice("🔍 Auditing tags...");
+                  const { VaultFileSystemAdapter } = await import("./src/vault-adapter");
+                  const { TagManager } = await import("./src/utils/tag-manager");
+                  const { TagAuditor } = await import("./src/utils/tag-auditor");
+
+                  const vaultAdapter = new VaultFileSystemAdapter(this.app);
+                  const tagManager = new TagManager(vaultAdapter);
+                  const tagAuditor = new TagAuditor(this.claudeConnection, tagManager, vaultAdapter, () => this.settings);
+
+                  const content = await vaultAdapter.readFile(file.path);
+                  const currentTags = await vaultAdapter.getFileTags(file.path);
+                  const auditResult = await tagAuditor.auditFileTags(file.path, content, currentTags);
+
+                  let message = `📊 Tag Audit Result:\nScore: ${auditResult.overallScore}/100\n\n`;
+
+                  if (auditResult.issues.length > 0) {
+                    message += `Issues (${auditResult.issues.length}):\n`;
+                    auditResult.issues.forEach(issue => {
+                      const emoji = issue.type === "error" ? "❌" : issue.type === "warning" ? "⚠️" : "💡";
+                      message += `${emoji} ${issue.tag ? `${issue.tag}: ` : ""}${issue.message}\n`;
+                      if (issue.fix) message += `   → ${issue.fix}\n`;
+                    });
+
+                    const shouldOptimize = await this.showConfirmDialog(
+                      "Optimize Tags?",
+                      `${auditResult.issues.length} issues found. Auto-optimize?`
+                    );
+
+                    if (shouldOptimize) {
+                      const optimizationResult = await tagAuditor.autoOptimizeTags(currentTags, auditResult);
+                      await vaultAdapter.updateFileTags(file.path, optimizationResult.optimizedTags);
+                      new Notice(`✅ Tags optimized! ${optimizationResult.changes.length} changes`);
+                    }
+                  } else {
+                    message += "✅ Tags look perfect!";
+                    new Notice("✅ Tags look great!");
+                  }
+
+                  this.showMessageModal("Tag Audit Result", message);
+                } catch (error: any) {
+                  new Notice(`❌ Tag audit failed: ${error.message}`);
+                }
+              });
+          });
+        }
+      })
     );
 
     this.registerEvent(
@@ -465,6 +625,214 @@ export default class ClaudeACPPlugin extends Plugin {
             chatView.appendToInput(payload);
           }
         }, 100);
+      },
+    });
+
+    // ==================== 标签系统命令 ====================
+    this.addCommand({
+      id: "audit-current-file-tags",
+      name: "Audit Current File Tags",
+      editorCallback: async (editor, view) => {
+        if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+          new Notice(`Please connect to ${this.getProviderLabel()} first`);
+          return;
+        }
+
+        const file = view.file;
+        if (!file) {
+          new Notice("No file currently active");
+          return;
+        }
+
+        try {
+          new Notice("🔍 Auditing tags...");
+          const { VaultFileSystemAdapter } = await import("./src/vault-adapter");
+          const { TagManager } = await import("./src/utils/tag-manager");
+          const { TagAuditor } = await import("./src/utils/tag-auditor");
+
+          const vaultAdapter = new VaultFileSystemAdapter(this.app);
+          const tagManager = new TagManager(vaultAdapter);
+          const tagAuditor = new TagAuditor(this.claudeConnection, tagManager, vaultAdapter, () => this.settings);
+
+          const content = await vaultAdapter.readFile(file.path);
+          const currentTags = await vaultAdapter.getFileTags(file.path);
+          const auditResult = await tagAuditor.auditFileTags(file.path, content, currentTags);
+
+          let message = `📊 Tag Audit Result for "${file.basename}":\n`;
+          message += `Score: ${auditResult.overallScore}/100\n`;
+
+          if (auditResult.issues.length > 0) {
+            message += `\nIssues found (${auditResult.issues.length}):\n`;
+            auditResult.issues.forEach(issue => {
+              const emoji = issue.type === "error" ? "❌" : issue.type === "warning" ? "⚠️" : "💡";
+              message += `${emoji} ${issue.tag ? `${issue.tag}: ` : ""}${issue.message}\n`;
+              if (issue.fix) {
+                message += `   → Fix: ${issue.fix}\n`;
+              }
+            });
+          }
+
+          if (auditResult.suggestions.length > 0) {
+            message += `\nSuggestions:\n`;
+            auditResult.suggestions.forEach(suggestion => {
+              message += `• ${suggestion}\n`;
+            });
+          }
+
+          if (auditResult.issues.length > 0) {
+            const shouldOptimize = await this.showConfirmDialog(
+              "Optimize Tags?",
+              `${auditResult.issues.length} issues found. Would you like to auto-optimize these tags?`
+            );
+
+            if (shouldOptimize) {
+              const optimizationResult = await tagAuditor.autoOptimizeTags(currentTags, auditResult);
+              await vaultAdapter.updateFileTags(file.path, optimizationResult.optimizedTags);
+              new Notice(`✅ Tags optimized! ${optimizationResult.changes.length} changes applied`);
+            }
+          } else {
+            new Notice("✅ Tags look great!");
+          }
+
+          this.showMessageModal("Tag Audit Result", message);
+
+        } catch (error: any) {
+          console.error("Tag audit failed:", error);
+          new Notice(`❌ Tag audit failed: ${error.message}`);
+        }
+      },
+    });
+
+    this.addCommand({
+      id: "audit-all-wiki-tags",
+      name: "Audit All Wiki Tags",
+      callback: async () => {
+        if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+          new Notice(`Please connect to ${this.getProviderLabel()} first`);
+          return;
+        }
+
+        try {
+          new Notice("🔍 Auditing all wiki tags...");
+          const { VaultFileSystemAdapter } = await import("./src/vault-adapter");
+          const { TagManager } = await import("./src/utils/tag-manager");
+          const { TagAuditor } = await import("./src/utils/tag-auditor");
+
+          const vaultAdapter = new VaultFileSystemAdapter(this.app);
+          const tagManager = new TagManager(vaultAdapter);
+          const tagAuditor = new TagAuditor(this.claudeConnection, tagManager, vaultAdapter, () => this.settings);
+
+          await tagManager.learnFromExistingTags();
+          const auditReport = await tagAuditor.auditAllTags();
+
+          let message = `📊 Global Tag Audit Report:\n`;
+          message += `Health Score: ${auditReport.healthScore}/100\n`;
+          message += `Total files: ${auditReport.totalFiles}\n`;
+          message += `Total tags: ${auditReport.totalTags}\n`;
+          message += `Unique tags: ${auditReport.uniqueTags}\n\n`;
+
+          const issues = auditReport.issues;
+          const totalIssues =
+            issues.duplicateTags.length +
+            issues.similarTags.length +
+            issues.flatTags.length +
+            issues.rarelyUsedTags.length +
+            issues.overusedTags.length;
+
+          if (totalIssues > 0) {
+            message += `⚠️ Issues found:\n`;
+            if (issues.duplicateTags.length > 0) message += `- Duplicate tags: ${issues.duplicateTags.length}\n`;
+            if (issues.similarTags.length > 0) message += `- Similar tag groups: ${issues.similarTags.length}\n`;
+            if (issues.flatTags.length > 0) message += `- Flat tags (non-hierarchical): ${issues.flatTags.length}\n`;
+            if (issues.rarelyUsedTags.length > 0) message += `- Rarely used tags: ${issues.rarelyUsedTags.length}\n`;
+            if (issues.overusedTags.length > 0) message += `- Overused tags: ${issues.overusedTags.length}\n`;
+
+            message += `\nOptimization suggestions:\n`;
+            auditReport.optimizationSuggestions.forEach(suggestion => {
+              const impact = suggestion.impact === "high" ? "🔴 High impact" : suggestion.impact === "medium" ? "🟡 Medium impact" : "🟢 Low impact";
+              const effort = suggestion.effort === "high" ? "⚡ High effort" : suggestion.effort === "medium" ? "⚡ Medium effort" : "⚡ Low effort";
+              message += `• ${suggestion.description} (${impact}, ${effort})\n`;
+            });
+
+            if (issues.flatTags.length > 0) {
+              const shouldMigrate = await this.showConfirmDialog(
+                "Migrate Flat Tags?",
+                `Found ${issues.flatTags.length} flat tags. Would you like to convert them to hierarchical format?`
+              );
+
+              if (shouldMigrate) {
+                const { TagMigrator } = await import("./src/utils/tag-migrator");
+                const migrator = new TagMigrator(tagManager, tagAuditor, vaultAdapter);
+
+                const preview = await migrator.generatePreviewReport();
+                const proceed = await this.showConfirmDialog(
+                  "Confirm Migration",
+                  `Migration will update ${preview.stats.convertedToHierarchical} tags in ${preview.updatedFiles} files. Proceed?`
+                );
+
+                if (proceed) {
+                  const result = await migrator.migrate();
+                  if (result.success) {
+                    new Notice(`✅ Migration completed! ${result.updatedFiles} files updated`);
+                  } else {
+                    new Notice(`❌ Migration failed with ${result.errors.length} errors`);
+                  }
+                }
+              }
+            }
+          } else {
+            message += "✅ All tags look great!";
+            new Notice("✅ Tag audit completed, no issues found!");
+          }
+
+          this.showMessageModal("Global Tag Audit Report", message);
+
+        } catch (error: any) {
+          console.error("Global tag audit failed:", error);
+          new Notice(`❌ Global tag audit failed: ${error.message}`);
+        }
+      },
+    });
+
+    this.addCommand({
+      id: "generate-tags-for-current-file",
+      name: "Generate Tags for Current File",
+      editorCallback: async (editor, view) => {
+        if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+          new Notice(`Please connect to ${this.getProviderLabel()} first`);
+          return;
+        }
+
+        const file = view.file;
+        if (!file) {
+          new Notice("No file currently active");
+          return;
+        }
+
+        try {
+          new Notice("🔄 Generating tags...");
+          const content = await this.app.vault.read(file);
+          const tags = await this.claudeConnection.analyzeTags(file.path, content);
+
+          if (tags.length === 0) {
+            new Notice("No tags generated");
+            return;
+          }
+
+          const message = `Generated tags:\n${tags.map(tag => `• ${tag}`).join("\n")}\n\nWould you like to apply these tags?`;
+          const shouldApply = await this.showConfirmDialog("Apply Generated Tags?", message);
+
+          if (shouldApply) {
+            const { VaultFileSystemAdapter } = await import("./src/vault-adapter");
+            const vaultAdapter = new VaultFileSystemAdapter(this.app);
+            await vaultAdapter.updateFileTags(file.path, tags);
+            new Notice(`✅ ${tags.length} tags applied successfully`);
+          }
+
+        } catch (error: any) {
+          console.error("Tag generation failed:", error);
+          new Notice(`❌ Tag generation failed: ${error.message}`);
+        }
       },
     });
   }
@@ -707,6 +1075,25 @@ class ClaudeACPSettingTab extends PluginSettingTab {
             this.plugin.settings.terminalPolicy = value as TerminalPolicy;
             await this.plugin.saveSettings();
           });
+      });
+
+    containerEl.createEl("h3", { text: "Tag Merge" });
+
+    new Setting(containerEl)
+      .setName("Tag merge analysis prompt")
+      .setDesc("Custom prompt for AI-powered tag merge analysis. Use {{TAG_LIST}} as placeholder for the tag list.")
+      .addTextArea((text) => {
+        text
+          .setPlaceholder("Enter your custom prompt...")
+          .setValue(this.plugin.settings.tagMergePrompt)
+          .onChange(async (value) => {
+            this.plugin.settings.tagMergePrompt = value;
+            await this.plugin.saveSettings();
+          });
+        text.inputEl.rows = 12;
+        text.inputEl.style.width = "100%";
+        text.inputEl.style.fontFamily = "monospace";
+        text.inputEl.style.fontSize = "12px";
       });
 
     containerEl.createEl("h3", { text: "Enabled Features" });

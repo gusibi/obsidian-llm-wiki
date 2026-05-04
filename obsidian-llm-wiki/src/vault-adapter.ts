@@ -1,4 +1,4 @@
-import { App, TFile, TFolder, Vault } from "obsidian";
+import { App, TFile, TFolder, Vault, TAbstractFile } from "obsidian";
 
 export class VaultFileSystemAdapter {
   private app: App;
@@ -129,6 +129,13 @@ export class VaultFileSystemAdapter {
     // getBasePath is not available in DataAdapter type
     // Return empty string or use alternative method
     return "";
+  }
+
+  /**
+   * Get abstract file by path
+   */
+  getAbstractFileByPath(path: string): TAbstractFile | null {
+    return this.vault.getAbstractFileByPath(path);
   }
 
   resolvePath(relativePath: string): string {

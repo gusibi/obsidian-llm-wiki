@@ -10,6 +10,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -32,187 +35,1199 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+// src/vault-adapter.ts
+var vault_adapter_exports = {};
+__export(vault_adapter_exports, {
+  VaultFileSystemAdapter: () => VaultFileSystemAdapter
+});
+var import_obsidian, VaultFileSystemAdapter;
+var init_vault_adapter = __esm({
+  "src/vault-adapter.ts"() {
+    "use strict";
+    import_obsidian = require("obsidian");
+    VaultFileSystemAdapter = class {
+      constructor(app) {
+        this.app = app;
+        this.vault = app.vault;
+      }
+      async readFile(path2) {
+        const file = this.vault.getAbstractFileByPath(path2);
+        if (!(file instanceof import_obsidian.TFile)) {
+          throw new Error(`File not found: ${path2}`);
+        }
+        return await this.vault.read(file);
+      }
+      async writeFile(path2, content) {
+        console.log("Claude ACP Vault: ===== writeFile START =====");
+        console.log("Claude ACP Vault: path:", path2);
+        console.log("Claude ACP Vault: content length:", content.length);
+        console.log(
+          "Claude ACP Vault: content preview (first 100 chars):",
+          content.substring(0, 100)
+        );
+        const existingFile = this.vault.getAbstractFileByPath(path2);
+        console.log("Claude ACP Vault: existingFile:", existingFile);
+        console.log(
+          "Claude ACP Vault: existingFile type:",
+          existingFile == null ? void 0 : existingFile.constructor.name
+        );
+        try {
+          if (existingFile instanceof import_obsidian.TFile) {
+            console.log("Claude ACP Vault: Modifying existing file");
+            await this.vault.modify(existingFile, content);
+            console.log("Claude ACP Vault: File modified successfully");
+          } else {
+            console.log("Claude ACP Vault: Creating new file");
+            await this.vault.create(path2, content);
+          }
+          console.log("Claude ACP Vault: ===== writeFile END (SUCCESS) =====");
+        } catch (error) {
+          console.error("Claude ACP Vault: ===== writeFile ERROR =====");
+          console.error("Claude ACP Vault: Error:", error);
+          if (error instanceof Error) {
+            console.error("Claude ACP Vault: Error message:", error.message);
+            console.error("Claude ACP Vault: Error stack:", error.stack);
+          }
+          console.error("Claude ACP Vault: Error string:", String(error));
+          console.error("Claude ACP Vault: =========================");
+          throw error;
+        }
+      }
+      async deleteFile(path2) {
+        const file = this.vault.getAbstractFileByPath(path2);
+        if (file instanceof import_obsidian.TFile) {
+          await this.vault.trash(file, false);
+        }
+      }
+      fileExists(path2) {
+        const file = this.vault.getAbstractFileByPath(path2);
+        return file instanceof import_obsidian.TFile;
+      }
+      directoryExists(path2) {
+        const folder = this.vault.getAbstractFileByPath(path2);
+        return folder instanceof import_obsidian.TFolder;
+      }
+      listFiles(path2 = "/") {
+        const folder = path2 === "/" ? this.vault.getRoot() : this.vault.getAbstractFileByPath(path2);
+        if (!(folder instanceof import_obsidian.TFolder)) {
+          return [];
+        }
+        const files = [];
+        function traverseFolder(currentFolder, currentPath) {
+          for (const child of currentFolder.children) {
+            const childPath = currentPath === "/" ? child.name : `${currentPath}/${child.name}`;
+            if (child instanceof import_obsidian.TFile && child.path.endsWith(".md")) {
+              files.push(childPath);
+            } else if (child instanceof import_obsidian.TFolder) {
+              traverseFolder(child, childPath);
+            }
+          }
+        }
+        traverseFolder(folder, path2 === "/" ? "" : path2);
+        return files;
+      }
+      getFileInfo(path2) {
+        const file = this.vault.getAbstractFileByPath(path2);
+        if (file instanceof import_obsidian.TFile) {
+          return {
+            size: file.stat.size,
+            mtime: file.stat.mtime,
+            ctime: file.stat.ctime
+          };
+        }
+        return null;
+      }
+      async createDirectory(path2) {
+        if (this.directoryExists(path2)) {
+          return;
+        }
+        await this.vault.createFolder(path2);
+      }
+      getVaultPath() {
+        return "";
+      }
+      /**
+       * Get abstract file by path
+       */
+      getAbstractFileByPath(path2) {
+        return this.vault.getAbstractFileByPath(path2);
+      }
+      resolvePath(relativePath) {
+        const basePath = this.getVaultPath();
+        return `${basePath}/${relativePath}`.replace(/\/+/g, "/");
+      }
+      getRelativePath(absolutePath) {
+        const basePath = this.getVaultPath();
+        if (absolutePath.startsWith(basePath)) {
+          return absolutePath.substring(basePath.length).replace(/^\//, "");
+        }
+        return absolutePath;
+      }
+      async searchFiles(query) {
+        const allFiles = this.vault.getMarkdownFiles();
+        const queryLower = query.toLowerCase();
+        return allFiles.filter((file) => {
+          const filename = file.basename.toLowerCase();
+          const path2 = file.path.toLowerCase();
+          return filename.includes(queryLower) || path2.includes(queryLower);
+        }).map((file) => file.path);
+      }
+      async getFileTags(path2) {
+        var _a;
+        const file = this.vault.getAbstractFileByPath(path2);
+        if (!(file instanceof import_obsidian.TFile)) {
+          return [];
+        }
+        const cache = this.app.metadataCache.getFileCache(file);
+        if (!cache) {
+          return [];
+        }
+        const tags = [];
+        if (cache.tags) {
+          for (const tag of cache.tags) {
+            tags.push(tag.tag);
+          }
+        }
+        if ((_a = cache.frontmatter) == null ? void 0 : _a.tags) {
+          const frontmatterTags = cache.frontmatter.tags;
+          if (Array.isArray(frontmatterTags)) {
+            tags.push(
+              ...frontmatterTags.map(
+                (tag) => tag.startsWith("#") ? tag : `#${tag}`
+              )
+            );
+          } else if (typeof frontmatterTags === "string") {
+            tags.push(
+              frontmatterTags.startsWith("#") ? frontmatterTags : `#${frontmatterTags}`
+            );
+          }
+        }
+        return [...new Set(tags)];
+      }
+      async updateFileTags(path2, tags) {
+        const file = this.vault.getAbstractFileByPath(path2);
+        if (!(file instanceof import_obsidian.TFile)) {
+          throw new Error(`File not found: ${path2}`);
+        }
+        await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+          frontmatter.tags = tags.map(
+            (tag) => tag.startsWith("#") ? tag.substring(1) : tag
+          );
+        });
+      }
+    };
+  }
+});
+
+// src/config/tag-knowledge-base.ts
+var TAG_KNOWLEDGE_BASE;
+var init_tag_knowledge_base = __esm({
+  "src/config/tag-knowledge-base.ts"() {
+    "use strict";
+    TAG_KNOWLEDGE_BASE = {
+      hierarchyMap: {
+        // 初始为空，会从现有标签自动学习
+      },
+      manualMappings: {
+        // 用户可以在这里手动指定标签映射，例如：
+        // "llm": "ai/llm",
+        // "rag": "ai/llm/rag",
+        // "prompt-engineering": "engineering/method/prompt-engineering"
+      },
+      mergeRules: [
+        // 可以在这里定义合并规则，例如：
+        // { from: "ml", to: "machine-learning" },
+        // { from: "ai", to: "artificial-intelligence" }
+      ],
+      rules: {
+        maxDepth: 4,
+        minLength: 2,
+        maxLength: 30,
+        allowedChars: /^[a-z0-9-]+$/,
+        // kebab-case 格式
+        maxTagsPerFile: 5,
+        minTagsPerFile: 2,
+        separator: "/"
+      },
+      forbiddenTags: ["tag", "todo", "test", "temp", "draft", "untagged"]
+    };
+  }
+});
+
+// src/utils/tag-manager.ts
+var tag_manager_exports = {};
+__export(tag_manager_exports, {
+  TagManager: () => TagManager
+});
+var import_obsidian5, TagManager;
+var init_tag_manager = __esm({
+  "src/utils/tag-manager.ts"() {
+    "use strict";
+    init_tag_knowledge_base();
+    import_obsidian5 = require("obsidian");
+    TagManager = class {
+      // 5 分钟缓存
+      constructor(vaultAdapter) {
+        this.allTagsCache = /* @__PURE__ */ new Map();
+        // 标签 -> 使用次数
+        this.cacheTimestamp = 0;
+        this.CACHE_TTL = 5 * 60 * 1e3;
+        this.vaultAdapter = vaultAdapter;
+      }
+      /**
+       * 校验标签是否符合规范
+       */
+      validate(tag) {
+        const errors = [];
+        const warnings = [];
+        const { rules, forbiddenTags } = TAG_KNOWLEDGE_BASE;
+        if (!tag || typeof tag !== "string") {
+          errors.push("\u6807\u7B7E\u4E0D\u80FD\u4E3A\u7A7A");
+          return { valid: false, errors, warnings };
+        }
+        if (forbiddenTags.includes(tag.toLowerCase())) {
+          errors.push(`\u6807\u7B7E "${tag}" \u662F\u7981\u7528\u6807\u7B7E`);
+        }
+        const levels = tag.split(rules.separator);
+        if (levels.length > rules.maxDepth) {
+          errors.push(`\u6807\u7B7E\u5C42\u7EA7\u8FC7\u6DF1\uFF0C\u6700\u5927\u5141\u8BB8 ${rules.maxDepth} \u7EA7\uFF0C\u5F53\u524D ${levels.length} \u7EA7`);
+        }
+        for (const level of levels) {
+          if (level.length < rules.minLength) {
+            errors.push(`\u5C42\u7EA7 "${level}" \u8FC7\u77ED\uFF0C\u6700\u5C0F\u957F\u5EA6 ${rules.minLength}`);
+          }
+          if (level.length > rules.maxLength) {
+            errors.push(`\u5C42\u7EA7 "${level}" \u8FC7\u957F\uFF0C\u6700\u5927\u957F\u5EA6 ${rules.maxLength}`);
+          }
+          if (!rules.allowedChars.test(level)) {
+            errors.push(`\u5C42\u7EA7 "${level}" \u683C\u5F0F\u4E0D\u6B63\u786E\uFF0C\u4EC5\u5141\u8BB8\u5C0F\u5199\u5B57\u6BCD\u3001\u6570\u5B57\u548C\u51CF\u53F7`);
+          }
+        }
+        if (levels.length === 1) {
+          warnings.push(`\u6807\u7B7E "${tag}" \u662F\u6241\u5E73\u683C\u5F0F\uFF0C\u5EFA\u8BAE\u4F7F\u7528\u5C42\u7EA7\u683C\u5F0F`);
+        }
+        return {
+          valid: errors.length === 0,
+          errors,
+          warnings
+        };
+      }
+      /**
+       * 规范化标签（处理别名、转换格式）
+       */
+      normalize(tag) {
+        let normalized = tag.toLowerCase().trim();
+        const { separator } = TAG_KNOWLEDGE_BASE.rules;
+        normalized = normalized.replace(new RegExp(`^${separator}+|${separator}+$`, "g"), "");
+        if (TAG_KNOWLEDGE_BASE.manualMappings[normalized]) {
+          normalized = TAG_KNOWLEDGE_BASE.manualMappings[normalized];
+        } else if (TAG_KNOWLEDGE_BASE.hierarchyMap[normalized]) {
+          normalized = TAG_KNOWLEDGE_BASE.hierarchyMap[normalized];
+        }
+        for (const rule of TAG_KNOWLEDGE_BASE.mergeRules) {
+          if (normalized === rule.from) {
+            normalized = rule.to;
+            break;
+          }
+        }
+        normalized = this.toKebabCase(normalized);
+        return normalized;
+      }
+      /**
+       * 为标签建议层级路径（基于已有的模式）
+       */
+      suggestHierarchy(tag) {
+        const suggestions = [];
+        const normalizedTag = this.normalize(tag);
+        if (normalizedTag.includes(TAG_KNOWLEDGE_BASE.rules.separator)) {
+          return [normalizedTag];
+        }
+        const allTags = Array.from(this.allTagsCache.keys());
+        const existingHierarchies = /* @__PURE__ */ new Set();
+        for (const existingTag of allTags) {
+          if (existingTag.includes(TAG_KNOWLEDGE_BASE.rules.separator)) {
+            const parts = existingTag.split(TAG_KNOWLEDGE_BASE.rules.separator);
+            for (let i = 1; i < parts.length; i++) {
+              const prefix = parts.slice(0, i).join(TAG_KNOWLEDGE_BASE.rules.separator);
+              existingHierarchies.add(prefix);
+            }
+            const lastPart = parts[parts.length - 1];
+            if (this.calculateSimilarity(lastPart, normalizedTag) > 0.7) {
+              const suggestion = parts.slice(0, -1).join(TAG_KNOWLEDGE_BASE.rules.separator) + TAG_KNOWLEDGE_BASE.rules.separator + normalizedTag;
+              if (!suggestions.includes(suggestion)) {
+                suggestions.push(suggestion);
+              }
+            }
+          }
+        }
+        if (suggestions.length === 0) {
+          const commonPrefixes = ["ai", "engineering", "domain", "project", "research", "tool"];
+          for (const prefix of commonPrefixes) {
+            suggestions.push(`${prefix}/${normalizedTag}`);
+          }
+        }
+        return suggestions.slice(0, 3);
+      }
+      /**
+       * 找到相似标签
+       */
+      findSimilar(tag, threshold = 0.6) {
+        const normalized = this.normalize(tag);
+        const allTags = Array.from(this.allTagsCache.keys());
+        const candidates = [];
+        for (const existingTag of allTags) {
+          if (existingTag === normalized)
+            continue;
+          const similarity = this.calculateSimilarity(normalized, existingTag);
+          if (similarity >= threshold) {
+            candidates.push({
+              tag: existingTag,
+              similarity,
+              suggestion: similarity > 0.8 ? `\u5EFA\u8BAE\u5408\u5E76\u5230 ${existingTag}` : "\u53EF\u80FD\u76F8\u5173"
+            });
+          }
+        }
+        return candidates.sort((a, b) => b.similarity - a.similarity);
+      }
+      /**
+       * 获取标签的层级信息
+       */
+      getHierarchyInfo(tag) {
+        const levels = tag.split(TAG_KNOWLEDGE_BASE.rules.separator);
+        const validation = this.validate(tag);
+        return {
+          levels,
+          depth: levels.length,
+          topLevel: levels[0],
+          leaf: levels[levels.length - 1],
+          isValid: validation.valid
+        };
+      }
+      /**
+       * 按前缀查询标签
+       */
+      queryByPrefix(prefix) {
+        const allTags = Array.from(this.allTagsCache.keys());
+        const normalizedPrefix = prefix.toLowerCase().trim();
+        return allTags.filter(
+          (tag) => tag.startsWith(normalizedPrefix) || tag.startsWith(normalizedPrefix + TAG_KNOWLEDGE_BASE.rules.separator)
+        );
+      }
+      /**
+       * 从现有标签库中学习层级模式
+       */
+      async learnFromExistingTags(wikiRoot = "wiki") {
+        const allTags = /* @__PURE__ */ new Map();
+        const mdFiles = await this.getAllMarkdownFiles(wikiRoot);
+        for (const file of mdFiles) {
+          const tags = await this.vaultAdapter.getFileTags(file.path);
+          for (const tag of tags) {
+            const normalized = this.normalize(tag);
+            allTags.set(normalized, (allTags.get(normalized) || 0) + 1);
+          }
+        }
+        this.allTagsCache = allTags;
+        this.cacheTimestamp = Date.now();
+        this.autoLearnHierarchyMappings();
+      }
+      /**
+       * 自动学习层级映射
+       */
+      autoLearnHierarchyMappings() {
+        const hierarchicalTags = Array.from(this.allTagsCache.keys()).filter(
+          (tag) => tag.includes(TAG_KNOWLEDGE_BASE.rules.separator)
+        );
+        for (const hTag of hierarchicalTags) {
+          const parts = hTag.split(TAG_KNOWLEDGE_BASE.rules.separator);
+          const leaf = parts[parts.length - 1];
+          if (!TAG_KNOWLEDGE_BASE.hierarchyMap[leaf] && !TAG_KNOWLEDGE_BASE.manualMappings[leaf]) {
+            TAG_KNOWLEDGE_BASE.hierarchyMap[leaf] = hTag;
+          }
+        }
+      }
+      /**
+       * 生成标签统计报告
+       */
+      async generateStats() {
+        const allTags = Array.from(this.allTagsCache.keys());
+        const hierarchicalTags = allTags.filter((tag) => tag.includes(TAG_KNOWLEDGE_BASE.rules.separator));
+        const topLevelTags = {};
+        let totalDepth = 0;
+        for (const tag of allTags) {
+          const levels = tag.split(TAG_KNOWLEDGE_BASE.rules.separator);
+          totalDepth += levels.length;
+          if (levels.length >= 1) {
+            topLevelTags[levels[0]] = (topLevelTags[levels[0]] || 0) + 1;
+          }
+        }
+        const fileCount = await this.countMarkdownFiles("wiki");
+        return {
+          totalTags: Array.from(this.allTagsCache.values()).reduce((sum, count) => sum + count, 0),
+          uniqueTags: allTags.length,
+          hierarchicalTagsCount: hierarchicalTags.length,
+          flatTagsCount: allTags.length - hierarchicalTags.length,
+          topLevelTags,
+          averageDepth: totalDepth / allTags.length,
+          tagsPerFile: fileCount > 0 ? this.allTagsCache.size / fileCount : 0
+        };
+      }
+      /**
+       * 获取所有标签及使用次数
+       */
+      getAllTags() {
+        if (Date.now() - this.cacheTimestamp > this.CACHE_TTL) {
+          this.learnFromExistingTags();
+        }
+        return new Map(this.allTagsCache);
+      }
+      /**
+       * 合并相似标签
+       */
+      async mergeTags(fromTag, toTag, wikiRoot = "wiki") {
+        const mdFiles = await this.getAllMarkdownFiles(wikiRoot);
+        let updatedFiles = 0;
+        for (const file of mdFiles) {
+          const tags = await this.vaultAdapter.getFileTags(file.path);
+          const newTags = tags.map(
+            (tag) => this.normalize(tag) === this.normalize(fromTag) ? toTag : tag
+          );
+          if (JSON.stringify(tags.sort()) !== JSON.stringify(newTags.sort())) {
+            await this.vaultAdapter.updateFileTags(file.path, newTags);
+            updatedFiles++;
+          }
+        }
+        this.allTagsCache.delete(fromTag);
+        this.allTagsCache.set(toTag, (this.allTagsCache.get(toTag) || 0) + (this.allTagsCache.get(fromTag) || 0));
+        return { updatedFiles };
+      }
+      // ==================== 辅助方法 ====================
+      /**
+       * 转换为 kebab-case 格式
+       */
+      toKebabCase(str) {
+        return str.replace(/([a-z])([A-Z])/g, "$1-$2").replace(/[\s_]+/g, "-").toLowerCase();
+      }
+      /**
+       * 计算两个字符串的相似度（Levenshtein 距离）
+       */
+      calculateSimilarity(a, b) {
+        if (a.length === 0 || b.length === 0)
+          return 0;
+        if (a === b)
+          return 1;
+        const matrix = Array.from(
+          { length: a.length + 1 },
+          () => Array.from({ length: b.length + 1 }, (_, i) => i)
+        );
+        for (let i = 1; i <= a.length; i++) {
+          matrix[i][0] = i;
+          for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j] + 1,
+              // 删除
+              matrix[i][j - 1] + 1,
+              // 插入
+              matrix[i - 1][j - 1] + cost
+              // 替换
+            );
+          }
+        }
+        const maxLength = Math.max(a.length, b.length);
+        return 1 - matrix[a.length][b.length] / maxLength;
+      }
+      /**
+       * 获取 wiki 目录下所有 markdown 文件
+       */
+      async getAllMarkdownFiles(root) {
+        const files = await this.vaultAdapter.listFiles(root);
+        return files.filter((path2) => path2.endsWith(".md")).map((path2) => this.vaultAdapter.getAbstractFileByPath(path2)).filter((file) => file instanceof import_obsidian5.TFile);
+      }
+      /**
+       * 统计 markdown 文件数量
+       */
+      async countMarkdownFiles(root) {
+        const files = await this.getAllMarkdownFiles(root);
+        return files.length;
+      }
+    };
+  }
+});
+
+// src/utils/tag-auditor.ts
+var tag_auditor_exports = {};
+__export(tag_auditor_exports, {
+  TagAuditor: () => TagAuditor
+});
+var TagAuditor;
+var init_tag_auditor = __esm({
+  "src/utils/tag-auditor.ts"() {
+    "use strict";
+    init_tag_knowledge_base();
+    TagAuditor = class {
+      constructor(connection, tagManager, vaultAdapter, settingsProvider) {
+        this.connection = connection;
+        this.tagManager = tagManager;
+        this.vaultAdapter = vaultAdapter;
+        this.settingsProvider = settingsProvider;
+      }
+      /**
+       * 审计单个文件的标签
+       */
+      async auditFileTags(filePath, fileContent, currentTags) {
+        if (!currentTags) {
+          currentTags = await this.vaultAdapter.getFileTags(filePath);
+        }
+        currentTags = currentTags || [];
+        if (!fileContent) {
+          fileContent = await this.vaultAdapter.readFile(filePath);
+        }
+        const issues = [];
+        const suggestions = [];
+        let totalScore = 100;
+        for (const tag of currentTags) {
+          const validation = this.tagManager.validate(tag);
+          if (!validation.valid) {
+            for (const error of validation.errors) {
+              issues.push({
+                type: "error",
+                tag,
+                message: error,
+                fix: this.tagManager.normalize(tag)
+              });
+              totalScore -= 10;
+            }
+          }
+          for (const warning of validation.warnings) {
+            issues.push({
+              type: "warning",
+              tag,
+              message: warning,
+              fix: this.tagManager.suggestHierarchy(tag)[0]
+            });
+            totalScore -= 5;
+          }
+        }
+        if (currentTags.length < TAG_KNOWLEDGE_BASE.rules.minTagsPerFile) {
+          issues.push({
+            type: "warning",
+            tag: "",
+            message: `\u6807\u7B7E\u6570\u91CF\u8FC7\u5C11\uFF0C\u5EFA\u8BAE\u81F3\u5C11 ${TAG_KNOWLEDGE_BASE.rules.minTagsPerFile} \u4E2A\u6807\u7B7E`
+          });
+          totalScore -= 10;
+          suggestions.push("\u5EFA\u8BAE\u6DFB\u52A0\u66F4\u591A\u76F8\u5173\u6807\u7B7E");
+        } else if (currentTags.length > TAG_KNOWLEDGE_BASE.rules.maxTagsPerFile) {
+          issues.push({
+            type: "warning",
+            tag: "",
+            message: `\u6807\u7B7E\u6570\u91CF\u8FC7\u591A\uFF0C\u5EFA\u8BAE\u6700\u591A ${TAG_KNOWLEDGE_BASE.rules.maxTagsPerFile} \u4E2A\u6807\u7B7E`
+          });
+          totalScore -= 10;
+          suggestions.push("\u5EFA\u8BAE\u79FB\u9664\u4E0D\u76F8\u5173\u7684\u6807\u7B7E");
+        }
+        const normalizedTags = currentTags.map((tag) => this.tagManager.normalize(tag));
+        for (let i = 0; i < normalizedTags.length; i++) {
+          for (let j = i + 1; j < normalizedTags.length; j++) {
+            const similarity = this.calculateSimilarity(normalizedTags[i], normalizedTags[j]);
+            if (similarity > 0.7) {
+              issues.push({
+                type: "warning",
+                tag: currentTags[i],
+                message: `\u4E0E\u6807\u7B7E "${currentTags[j]}" \u542B\u4E49\u76F8\u4F3C`,
+                fix: `\u5EFA\u8BAE\u5408\u5E76\u4E3A\u4E00\u4E2A\u66F4\u901A\u7528\u7684\u6807\u7B7E`
+              });
+              totalScore -= 5;
+            }
+          }
+        }
+        try {
+          const aiAnalysis = await this.analyzeTagsWithAI(filePath, fileContent, currentTags);
+          issues.push(...aiAnalysis.issues);
+          suggestions.push(...aiAnalysis.suggestions);
+          totalScore += aiAnalysis.scoreAdjustment;
+        } catch (error) {
+          console.warn("AI \u6807\u7B7E\u5206\u6790\u5931\u8D25:", error);
+        }
+        totalScore = Math.max(0, Math.min(100, totalScore));
+        return {
+          file: filePath,
+          currentTags,
+          issues,
+          overallScore: totalScore,
+          suggestions
+        };
+      }
+      /**
+       * 审计所有 wiki 文件的标签
+       */
+      async auditAllTags(wikiRoot = "wiki") {
+        const allTags = this.tagManager.getAllTags();
+        const allFiles = await this.vaultAdapter.listFiles(wikiRoot);
+        const mdFiles = allFiles.filter((path2) => path2.endsWith(".md"));
+        const report = {
+          totalFiles: mdFiles.length,
+          totalTags: Array.from(allTags.values()).reduce((sum, count) => sum + count, 0),
+          uniqueTags: allTags.size,
+          healthScore: 100,
+          issues: {
+            duplicateTags: [],
+            similarTags: [],
+            flatTags: [],
+            inconsistentTags: [],
+            rarelyUsedTags: [],
+            overusedTags: []
+          },
+          optimizationSuggestions: []
+        };
+        const flatTags = {};
+        for (const [tag, count] of allTags.entries()) {
+          if (!tag.includes(TAG_KNOWLEDGE_BASE.rules.separator)) {
+            flatTags[tag] = count;
+          }
+        }
+        report.issues.flatTags = Object.entries(flatTags).map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count);
+        const tagCounts = Array.from(allTags.entries());
+        const avgCount = report.totalTags / report.uniqueTags;
+        report.issues.rarelyUsedTags = tagCounts.filter(([_, count]) => count < Math.max(1, avgCount * 0.3)).map(([tag, count]) => ({ tag, count })).sort((a, b) => a.count - b.count);
+        report.issues.overusedTags = tagCounts.filter(([_, count]) => count > avgCount * 3).map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count);
+        const similarGroups = this.findSimilarTagGroups(Array.from(allTags.keys()));
+        report.issues.similarTags = similarGroups.map((group) => ({
+          group: group.tags,
+          similarity: group.averageSimilarity
+        })).filter((group) => group.similarity > 0.6).sort((a, b) => b.similarity - a.similarity);
+        const flatRatio = report.issues.flatTags.length / report.uniqueTags;
+        const similarRatio = report.issues.similarTags.length / report.uniqueTags;
+        const rareRatio = report.issues.rarelyUsedTags.length / report.uniqueTags;
+        report.healthScore = 100 - flatRatio * 30 - // 扁平标签最多扣 30 分
+        similarRatio * 30 - // 相似标签最多扣 30 分
+        rareRatio * 20 - // 低使用标签最多扣 20 分
+        report.issues.overusedTags.length * 2;
+        report.healthScore = Math.max(0, Math.min(100, Math.round(report.healthScore)));
+        report.optimizationSuggestions = this.generateOptimizationSuggestions(report);
+        return report;
+      }
+      /**
+       * 自动优化标签
+       */
+      async autoOptimizeTags(tags, auditResult) {
+        if (!auditResult) {
+          auditResult = {
+            file: "",
+            currentTags: tags,
+            issues: [],
+            overallScore: 0,
+            suggestions: []
+          };
+        }
+        const changes = [];
+        let optimizedTags = [...tags];
+        const originalScore = auditResult.overallScore;
+        for (let i = 0; i < optimizedTags.length; i++) {
+          const original = optimizedTags[i];
+          const normalized = this.tagManager.normalize(original);
+          if (original !== normalized) {
+            optimizedTags[i] = normalized;
+            changes.push({
+              type: "rename",
+              from: original,
+              to: normalized,
+              reason: "\u6807\u7B7E\u683C\u5F0F\u89C4\u8303\u5316"
+            });
+          }
+        }
+        for (let i = 0; i < optimizedTags.length; i++) {
+          const tag = optimizedTags[i];
+          if (!tag.includes(TAG_KNOWLEDGE_BASE.rules.separator)) {
+            const suggestions = this.tagManager.suggestHierarchy(tag);
+            if (suggestions.length > 0) {
+              optimizedTags[i] = suggestions[0];
+              changes.push({
+                type: "restructure",
+                from: tag,
+                to: suggestions[0],
+                reason: "\u6241\u5E73\u6807\u7B7E\u8F6C\u6362\u4E3A\u5C42\u7EA7\u683C\u5F0F"
+              });
+            }
+          }
+        }
+        const uniqueTags = Array.from(new Set(optimizedTags));
+        if (uniqueTags.length !== optimizedTags.length) {
+          const removed = optimizedTags.filter((tag, index) => optimizedTags.indexOf(tag) !== index);
+          for (const tag of removed) {
+            changes.push({
+              type: "remove",
+              from: tag,
+              reason: "\u91CD\u590D\u6807\u7B7E"
+            });
+          }
+          optimizedTags = uniqueTags;
+        }
+        const mergedTags = /* @__PURE__ */ new Set();
+        const toRemove = /* @__PURE__ */ new Set();
+        for (let i = 0; i < optimizedTags.length; i++) {
+          if (toRemove.has(optimizedTags[i]))
+            continue;
+          const similar = this.tagManager.findSimilar(optimizedTags[i], 0.8);
+          if (similar.length > 0) {
+            const allTags = this.tagManager.getAllTags();
+            const mainTag = [optimizedTags[i], ...similar.map((s) => s.tag)].sort((a, b) => (allTags.get(b) || 0) - (allTags.get(a) || 0))[0];
+            mergedTags.add(mainTag);
+            for (const s of similar) {
+              if (s.tag !== mainTag && optimizedTags.includes(s.tag)) {
+                toRemove.add(s.tag);
+                changes.push({
+                  type: "merge",
+                  from: s.tag,
+                  to: mainTag,
+                  reason: `\u4E0E "${mainTag}" \u542B\u4E49\u76F8\u4F3C`
+                });
+              }
+            }
+          } else {
+            mergedTags.add(optimizedTags[i]);
+          }
+        }
+        optimizedTags = Array.from(mergedTags);
+        if (optimizedTags.length > TAG_KNOWLEDGE_BASE.rules.maxTagsPerFile) {
+          const removed = optimizedTags.splice(TAG_KNOWLEDGE_BASE.rules.maxTagsPerFile);
+          for (const tag of removed) {
+            changes.push({
+              type: "remove",
+              from: tag,
+              reason: "\u6807\u7B7E\u6570\u91CF\u8FC7\u591A\uFF0C\u79FB\u9664\u76F8\u5173\u6027\u8F83\u4F4E\u7684\u6807\u7B7E"
+            });
+          }
+        }
+        const newScore = originalScore + changes.length * 5;
+        const scoreImprovement = Math.max(0, newScore - originalScore);
+        return {
+          originalTags: tags,
+          optimizedTags,
+          changes,
+          scoreImprovement,
+          needsReview: changes.some((c) => c.type === "remove" || c.type === "merge")
+        };
+      }
+      /**
+       * 批量合并相似标签
+       */
+      async mergeSimilarTags(candidates, wikiRoot = "wiki") {
+        const result = {
+          success: true,
+          mergedCount: 0,
+          updatedFiles: 0,
+          errors: []
+        };
+        for (const candidate of candidates) {
+          try {
+            const mergeResult = await this.tagManager.mergeTags(candidate.from, candidate.to, wikiRoot);
+            result.mergedCount++;
+            result.updatedFiles += mergeResult.updatedFiles;
+          } catch (error) {
+            result.success = false;
+            result.errors.push(`\u5408\u5E76 "${candidate.from}" \u5230 "${candidate.to}" \u5931\u8D25: ${error}`);
+          }
+        }
+        return result;
+      }
+      // ==================== 辅助方法 ====================
+      /**
+       * 使用 AI 分析标签相关性和合理性
+       */
+      async analyzeTagsWithAI(filePath, fileContent, tags) {
+        const prompt = `
+\u8BF7\u5206\u6790\u4EE5\u4E0B\u6587\u4EF6\u7684\u6807\u7B7E\u662F\u5426\u5408\u7406\uFF1A
+
+\u6587\u4EF6\u8DEF\u5F84\uFF1A${filePath}
+\u6587\u4EF6\u5185\u5BB9\uFF1A${fileContent.slice(0, 2e3)}...\uFF08\u5185\u5BB9\u8FC7\u957F\u5DF2\u622A\u65AD\uFF09
+\u5F53\u524D\u6807\u7B7E\uFF1A${JSON.stringify(tags)}
+
+\u8BF7\u4ECE\u4EE5\u4E0B\u65B9\u9762\u5206\u6790\uFF1A
+1. \u6807\u7B7E\u662F\u5426\u4E0E\u5185\u5BB9\u76F8\u5173\uFF1F\u5982\u679C\u6709\u4E0D\u76F8\u5173\u7684\u6807\u7B7E\uFF0C\u8BF7\u6307\u51FA
+2. \u662F\u5426\u7F3A\u5C11\u91CD\u8981\u7684\u76F8\u5173\u6807\u7B7E\uFF1F\u8BF7\u5EFA\u8BAE
+3. \u6807\u7B7E\u7C92\u5EA6\u662F\u5426\u5408\u9002\uFF1F\u662F\u5426\u6709\u8FC7\u4E8E\u5BBD\u6CDB\u6216\u8FC7\u4E8E\u5177\u4F53\u7684\u6807\u7B7E\uFF1F
+4. \u6807\u7B7E\u5C42\u7EA7\u662F\u5426\u5408\u7406\uFF1F
+
+\u8BF7\u4EE5 JSON \u683C\u5F0F\u8FD4\u56DE\u7ED3\u679C\uFF1A
+{
+  "issues": [
+    {
+      "type": "error" | "warning" | "suggestion",
+      "tag": "\u95EE\u9898\u6807\u7B7E",
+      "message": "\u95EE\u9898\u63CF\u8FF0",
+      "fix": "\u4FEE\u590D\u5EFA\u8BAE"
+    }
+  ],
+  "suggestions": ["\u4F18\u5316\u5EFA\u8BAE\u5217\u8868"],
+  "scoreAdjustment": \u5206\u6570\u8C03\u6574\uFF08\u6B63\u6570\u52A0\u5206\uFF0C\u8D1F\u6570\u6263\u5206\uFF09
+}
+`;
+        try {
+          const result = await this.connection.sendChatMessage(prompt);
+          const parsed = JSON.parse(result);
+          return parsed;
+        } catch (error) {
+          console.warn("AI \u5206\u6790\u5931\u8D25:", error);
+          return {
+            issues: [],
+            suggestions: [],
+            scoreAdjustment: 0
+          };
+        }
+      }
+      /**
+       * 使用 AI 分析标签合并候选（独立 session，不影响 chat 历史）
+       */
+      async analyzeMergeCandidatesWithAI(allTags, customPrompt) {
+        const settings = this.settingsProvider();
+        const promptTemplate = customPrompt || settings.tagMergePrompt;
+        const tagList = Array.from(allTags.entries()).map(([tag, count]) => `${tag} (\u4F7F\u7528${count}\u6B21)`).join("\n");
+        const prompt = promptTemplate.replace("{{TAG_LIST}}", tagList);
+        const anyConn = this.connection;
+        const originalSessionId = anyConn.currentSessionId || null;
+        try {
+          if (this.connection.loadSession && originalSessionId) {
+            await this.connection.createSession();
+          }
+          const result = await this.connection.sendChatMessage(
+            prompt + "\n\n\u8BF7\u53EA\u8FD4\u56DE JSON \u6570\u7EC4\uFF0C\u4E0D\u8981\u5305\u542B\u5176\u4ED6\u6587\u5B57\u6216 markdown \u683C\u5F0F\u6807\u8BB0\u3002"
+          );
+          if (this.connection.loadSession && originalSessionId) {
+            await this.connection.loadSession(originalSessionId);
+          }
+          let cleaned = result.replace(/```json|```/g, "").trim();
+          const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+          if (!jsonMatch) {
+            console.warn("AI \u5408\u5E76\u5206\u6790\u8FD4\u56DE\u683C\u5F0F\u4E0D\u6B63\u786E:", result);
+            return [];
+          }
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (!Array.isArray(parsed))
+            return [];
+          return parsed.filter(
+            (s) => Array.isArray(s.from) && typeof s.to === "string" && typeof s.reason === "string"
+          );
+        } catch (error) {
+          if (this.connection.loadSession && originalSessionId) {
+            try {
+              await this.connection.loadSession(originalSessionId);
+            } catch (e) {
+            }
+          }
+          console.warn("AI \u5408\u5E76\u5206\u6790\u5931\u8D25:", error);
+          return [];
+        }
+      }
+      /**
+       * 查找相似标签组
+       */
+      findSimilarTagGroups(tags) {
+        const groups = [];
+        const visited = /* @__PURE__ */ new Set();
+        for (const tag of tags) {
+          if (visited.has(tag))
+            continue;
+          const group = [tag];
+          let totalSimilarity = 0;
+          let count = 0;
+          for (const otherTag of tags) {
+            if (tag === otherTag || visited.has(otherTag))
+              continue;
+            const similarity = this.calculateSimilarity(tag, otherTag);
+            if (similarity > 0.6) {
+              group.push(otherTag);
+              totalSimilarity += similarity;
+              count++;
+            }
+          }
+          if (group.length >= 2) {
+            groups.push({
+              tags: group,
+              averageSimilarity: count > 0 ? totalSimilarity / count : 0
+            });
+            group.forEach((t) => visited.add(t));
+          }
+        }
+        return groups;
+      }
+      /**
+       * 生成全局优化建议
+       */
+      generateOptimizationSuggestions(report) {
+        const suggestions = [];
+        if (report.issues.flatTags.length > 0) {
+          suggestions.push({
+            type: "restructure",
+            description: `\u6709 ${report.issues.flatTags.length} \u4E2A\u6241\u5E73\u6807\u7B7E\uFF0C\u5EFA\u8BAE\u8F6C\u6362\u4E3A\u5C42\u7EA7\u683C\u5F0F`,
+            impact: "medium",
+            effort: "medium"
+          });
+        }
+        if (report.issues.similarTags.length > 0) {
+          suggestions.push({
+            type: "merge",
+            description: `\u6709 ${report.issues.similarTags.length} \u7EC4\u76F8\u4F3C\u6807\u7B7E\uFF0C\u5EFA\u8BAE\u5408\u5E76`,
+            impact: "high",
+            effort: "medium"
+          });
+        }
+        if (report.issues.rarelyUsedTags.length > 0) {
+          suggestions.push({
+            type: "remove",
+            description: `\u6709 ${report.issues.rarelyUsedTags.length} \u4E2A\u6781\u5C11\u4F7F\u7528\u7684\u6807\u7B7E\uFF0C\u5EFA\u8BAE\u6E05\u7406\u6216\u5408\u5E76`,
+            impact: "low",
+            effort: "low"
+          });
+        }
+        if (report.issues.overusedTags.length > 0) {
+          suggestions.push({
+            type: "restructure",
+            description: `\u6709 ${report.issues.overusedTags.length} \u4E2A\u6807\u7B7E\u4F7F\u7528\u8FC7\u4E8E\u9891\u7E41\uFF0C\u5EFA\u8BAE\u62C6\u5206\u4E3A\u66F4\u7EC6\u7684\u5C42\u7EA7`,
+            impact: "high",
+            effort: "high"
+          });
+        }
+        return suggestions;
+      }
+      /**
+       * 计算字符串相似度
+       */
+      calculateSimilarity(a, b) {
+        if (a === b)
+          return 1;
+        if (a.includes(b) || b.includes(a))
+          return 0.7;
+        const setA = new Set(a.split(""));
+        const setB = new Set(b.split(""));
+        const intersection = new Set([...setA].filter((x) => setB.has(x)));
+        return intersection.size / Math.max(setA.size, setB.size);
+      }
+    };
+  }
+});
+
+// src/utils/tag-migrator.ts
+var tag_migrator_exports = {};
+__export(tag_migrator_exports, {
+  TagMigrator: () => TagMigrator
+});
+var TagMigrator;
+var init_tag_migrator = __esm({
+  "src/utils/tag-migrator.ts"() {
+    "use strict";
+    init_tag_knowledge_base();
+    TagMigrator = class {
+      constructor(tagManager, tagAuditor, vaultAdapter) {
+        this.tagManager = tagManager;
+        this.tagAuditor = tagAuditor;
+        this.vaultAdapter = vaultAdapter;
+      }
+      /**
+       * 执行标签迁移
+       */
+      async migrate(wikiRoot = "wiki", options = {}) {
+        const defaultOptions = {
+          dryRun: false,
+          autoConvertFlatTags: true,
+          autoMergeSimilarTags: true,
+          normalizeTags: true,
+          confirmChanges: false
+        };
+        const opts = { ...defaultOptions, ...options };
+        const allFiles = await this.vaultAdapter.listFiles(wikiRoot);
+        const mdFiles = allFiles.filter((path2) => path2.endsWith(".md"));
+        const result = {
+          success: true,
+          totalFiles: mdFiles.length,
+          processedFiles: 0,
+          updatedFiles: 0,
+          errors: [],
+          stats: {
+            originalFlatTags: 0,
+            convertedToHierarchical: 0,
+            mergedTags: 0,
+            renamedTags: 0
+          }
+        };
+        await this.tagManager.learnFromExistingTags(wikiRoot);
+        if (opts.autoMergeSimilarTags) {
+          const auditReport = await this.tagAuditor.auditAllTags(wikiRoot);
+          const mergeCandidates = auditReport.issues.similarTags.filter((group) => group.similarity > 0.7).map((group) => ({
+            from: group.group[0],
+            to: group.group[1],
+            reason: `\u76F8\u4F3C\u6807\u7B7E\u5408\u5E76\uFF0C\u76F8\u4F3C\u5EA6 ${group.similarity.toFixed(2)}`
+          }));
+          if (!opts.dryRun && mergeCandidates.length > 0) {
+            const mergeResult = await this.tagAuditor.mergeSimilarTags(mergeCandidates, wikiRoot);
+            result.stats.mergedTags += mergeResult.mergedCount;
+            result.updatedFiles += mergeResult.updatedFiles;
+          }
+        }
+        for (const filePath of mdFiles) {
+          try {
+            if (opts.filter && !opts.filter(filePath)) {
+              continue;
+            }
+            const originalTags = await this.vaultAdapter.getFileTags(filePath);
+            let newTags = [...originalTags];
+            const originalFlatCount = originalTags.filter(
+              (tag) => !tag.includes(TAG_KNOWLEDGE_BASE.rules.separator)
+            ).length;
+            result.stats.originalFlatTags += originalFlatCount;
+            if (opts.normalizeTags) {
+              const normalizedTags = newTags.map((tag) => {
+                const normalized = this.tagManager.normalize(tag);
+                if (normalized !== tag) {
+                  result.stats.renamedTags++;
+                }
+                return normalized;
+              });
+              newTags = Array.from(new Set(normalizedTags));
+            }
+            if (opts.autoConvertFlatTags) {
+              const convertedTags = newTags.map((tag) => {
+                if (!tag.includes(TAG_KNOWLEDGE_BASE.rules.separator)) {
+                  const suggestions = this.tagManager.suggestHierarchy(tag);
+                  if (suggestions.length > 0) {
+                    result.stats.convertedToHierarchical++;
+                    return suggestions[0];
+                  }
+                }
+                return tag;
+              });
+              newTags = Array.from(new Set(convertedTags));
+            }
+            const optimizationResult = await this.tagAuditor.autoOptimizeTags(newTags);
+            newTags = optimizationResult.optimizedTags;
+            result.stats.mergedTags += optimizationResult.changes.filter((c) => c.type === "merge").length;
+            if (JSON.stringify(originalTags.sort()) !== JSON.stringify(newTags.sort())) {
+              if (!opts.dryRun) {
+                await this.vaultAdapter.updateFileTags(filePath, newTags);
+              }
+              result.updatedFiles++;
+            }
+            result.processedFiles++;
+          } catch (error) {
+            result.success = false;
+            result.errors.push({
+              file: filePath,
+              error: error instanceof Error ? error.message : String(error)
+            });
+          }
+        }
+        return result;
+      }
+      /**
+       * 生成迁移预览报告
+       */
+      async generatePreviewReport(wikiRoot = "wiki") {
+        const result = await this.migrate(wikiRoot, { dryRun: true });
+        const report = {
+          summary: this.generateSummary(result),
+          updatedFiles: result.updatedFiles,
+          changes: [],
+          stats: result.stats,
+          recommendations: this.generateRecommendations(result)
+        };
+        return report;
+      }
+      /**
+       * 导出迁移报告到文件
+       */
+      async exportReport(report, outputPath) {
+        const content = `# \u6807\u7B7E\u8FC1\u79FB\u62A5\u544A
+
+## \u6458\u8981
+${report.summary}
+
+## \u7EDF\u8BA1\u4FE1\u606F
+- \u603B\u6587\u4EF6\u6570\uFF1A${report.stats.originalFlatTags + report.stats.convertedToHierarchical}
+- \u8F6C\u6362\u7684\u6241\u5E73\u6807\u7B7E\uFF1A${report.stats.convertedToHierarchical}
+- \u5408\u5E76\u7684\u6807\u7B7E\uFF1A${report.stats.mergedTags}
+- \u91CD\u547D\u540D\u7684\u6807\u7B7E\uFF1A${report.stats.renamedTags}
+
+## \u5EFA\u8BAE
+${report.recommendations.map((r) => `- ${r}`).join("\n")}
+`;
+        await this.vaultAdapter.writeFile(outputPath, content);
+      }
+      /**
+       * 回滚最近的迁移（基于 git 历史）
+       */
+      async rollback(wikiRoot = "wiki") {
+        try {
+          const gitCommand = `cd "${this.vaultAdapter.getVaultPath()}" && git checkout HEAD -- "${wikiRoot}"`;
+          const { exec } = require("child_process");
+          return new Promise((resolve) => {
+            exec(gitCommand, (error, stdout, stderr) => {
+              if (error) {
+                resolve({
+                  success: false,
+                  message: `\u56DE\u6EDA\u5931\u8D25: ${error.message}`
+                });
+              } else {
+                resolve({
+                  success: true,
+                  message: "\u56DE\u6EDA\u6210\u529F\uFF0C\u5DF2\u6062\u590D\u5230\u8FC1\u79FB\u524D\u7684\u72B6\u6001"
+                });
+              }
+            });
+          });
+        } catch (error) {
+          return {
+            success: false,
+            message: `\u56DE\u6EDA\u5931\u8D25: ${error}`
+          };
+        }
+      }
+      // ==================== 辅助方法 ====================
+      /**
+       * 生成迁移摘要
+       */
+      generateSummary(result) {
+        if (!result.success) {
+          return `\u8FC1\u79FB\u5931\u8D25\uFF0C\u5904\u7406\u4E86 ${result.processedFiles}/${result.totalFiles} \u4E2A\u6587\u4EF6\uFF0C\u51FA\u73B0 ${result.errors.length} \u4E2A\u9519\u8BEF\u3002`;
+        }
+        return `\u8FC1\u79FB\u6210\u529F\uFF0C\u5904\u7406\u4E86 ${result.processedFiles} \u4E2A\u6587\u4EF6\uFF0C\u66F4\u65B0\u4E86 ${result.updatedFiles} \u4E2A\u6587\u4EF6\u3002
+\u8F6C\u6362\u4E86 ${result.stats.convertedToHierarchical} \u4E2A\u6241\u5E73\u6807\u7B7E\u4E3A\u5C42\u7EA7\u683C\u5F0F\uFF0C
+\u5408\u5E76\u4E86 ${result.stats.mergedTags} \u4E2A\u76F8\u4F3C\u6807\u7B7E\uFF0C
+\u91CD\u547D\u540D\u4E86 ${result.stats.renamedTags} \u4E2A\u6807\u7B7E\u4EE5\u7EDF\u4E00\u683C\u5F0F\u3002`;
+      }
+      /**
+       * 生成优化建议
+       */
+      generateRecommendations(result) {
+        const recommendations = [];
+        if (result.stats.convertedToHierarchical > 0) {
+          recommendations.push("\u5EFA\u8BAE\u68C0\u67E5\u81EA\u52A8\u8F6C\u6362\u7684\u6807\u7B7E\uFF0C\u786E\u4FDD\u5C42\u7EA7\u7ED3\u6784\u7B26\u5408\u9884\u671F");
+        }
+        if (result.stats.mergedTags > 0) {
+          recommendations.push("\u5EFA\u8BAE\u68C0\u67E5\u5408\u5E76\u7684\u6807\u7B7E\uFF0C\u786E\u8BA4\u5408\u5E76\u7ED3\u679C\u6B63\u786E");
+        }
+        if (result.stats.originalFlatTags - result.stats.convertedToHierarchical > 0) {
+          recommendations.push("\u90E8\u5206\u6241\u5E73\u6807\u7B7E\u672A\u80FD\u81EA\u52A8\u8F6C\u6362\uFF0C\u5EFA\u8BAE\u624B\u52A8\u8C03\u6574");
+        }
+        recommendations.push("\u8FC1\u79FB\u5B8C\u6210\u540E\u5EFA\u8BAE\u91CD\u65B0\u751F\u6210\u6807\u7B7E\u7D22\u5F15");
+        return recommendations;
+      }
+    };
+  }
+});
+
 // main.ts
 var main_exports = {};
 __export(main_exports, {
   default: () => ClaudeACPPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 
 // src/claude-connection.ts
 var import_child_process2 = require("child_process");
 
 // src/acp-client.ts
 var import_crypto = require("crypto");
-
-// src/vault-adapter.ts
-var import_obsidian = require("obsidian");
-var VaultFileSystemAdapter = class {
-  constructor(app) {
-    this.app = app;
-    this.vault = app.vault;
-  }
-  async readFile(path2) {
-    const file = this.vault.getAbstractFileByPath(path2);
-    if (!(file instanceof import_obsidian.TFile)) {
-      throw new Error(`File not found: ${path2}`);
-    }
-    return await this.vault.read(file);
-  }
-  async writeFile(path2, content) {
-    console.log("Claude ACP Vault: ===== writeFile START =====");
-    console.log("Claude ACP Vault: path:", path2);
-    console.log("Claude ACP Vault: content length:", content.length);
-    console.log(
-      "Claude ACP Vault: content preview (first 100 chars):",
-      content.substring(0, 100)
-    );
-    const existingFile = this.vault.getAbstractFileByPath(path2);
-    console.log("Claude ACP Vault: existingFile:", existingFile);
-    console.log(
-      "Claude ACP Vault: existingFile type:",
-      existingFile == null ? void 0 : existingFile.constructor.name
-    );
-    try {
-      if (existingFile instanceof import_obsidian.TFile) {
-        console.log("Claude ACP Vault: Modifying existing file");
-        await this.vault.modify(existingFile, content);
-        console.log("Claude ACP Vault: File modified successfully");
-      } else {
-        console.log("Claude ACP Vault: Creating new file");
-        await this.vault.create(path2, content);
-      }
-      console.log("Claude ACP Vault: ===== writeFile END (SUCCESS) =====");
-    } catch (error) {
-      console.error("Claude ACP Vault: ===== writeFile ERROR =====");
-      console.error("Claude ACP Vault: Error:", error);
-      if (error instanceof Error) {
-        console.error("Claude ACP Vault: Error message:", error.message);
-        console.error("Claude ACP Vault: Error stack:", error.stack);
-      }
-      console.error("Claude ACP Vault: Error string:", String(error));
-      console.error("Claude ACP Vault: =========================");
-      throw error;
-    }
-  }
-  async deleteFile(path2) {
-    const file = this.vault.getAbstractFileByPath(path2);
-    if (file instanceof import_obsidian.TFile) {
-      await this.vault.trash(file, false);
-    }
-  }
-  fileExists(path2) {
-    const file = this.vault.getAbstractFileByPath(path2);
-    return file instanceof import_obsidian.TFile;
-  }
-  directoryExists(path2) {
-    const folder = this.vault.getAbstractFileByPath(path2);
-    return folder instanceof import_obsidian.TFolder;
-  }
-  listFiles(path2 = "/") {
-    const folder = path2 === "/" ? this.vault.getRoot() : this.vault.getAbstractFileByPath(path2);
-    if (!(folder instanceof import_obsidian.TFolder)) {
-      return [];
-    }
-    const files = [];
-    function traverseFolder(currentFolder, currentPath) {
-      for (const child of currentFolder.children) {
-        const childPath = currentPath === "/" ? child.name : `${currentPath}/${child.name}`;
-        if (child instanceof import_obsidian.TFile && child.path.endsWith(".md")) {
-          files.push(childPath);
-        } else if (child instanceof import_obsidian.TFolder) {
-          traverseFolder(child, childPath);
-        }
-      }
-    }
-    traverseFolder(folder, path2 === "/" ? "" : path2);
-    return files;
-  }
-  getFileInfo(path2) {
-    const file = this.vault.getAbstractFileByPath(path2);
-    if (file instanceof import_obsidian.TFile) {
-      return {
-        size: file.stat.size,
-        mtime: file.stat.mtime,
-        ctime: file.stat.ctime
-      };
-    }
-    return null;
-  }
-  async createDirectory(path2) {
-    if (this.directoryExists(path2)) {
-      return;
-    }
-    await this.vault.createFolder(path2);
-  }
-  getVaultPath() {
-    return "";
-  }
-  resolvePath(relativePath) {
-    const basePath = this.getVaultPath();
-    return `${basePath}/${relativePath}`.replace(/\/+/g, "/");
-  }
-  getRelativePath(absolutePath) {
-    const basePath = this.getVaultPath();
-    if (absolutePath.startsWith(basePath)) {
-      return absolutePath.substring(basePath.length).replace(/^\//, "");
-    }
-    return absolutePath;
-  }
-  async searchFiles(query) {
-    const allFiles = this.vault.getMarkdownFiles();
-    const queryLower = query.toLowerCase();
-    return allFiles.filter((file) => {
-      const filename = file.basename.toLowerCase();
-      const path2 = file.path.toLowerCase();
-      return filename.includes(queryLower) || path2.includes(queryLower);
-    }).map((file) => file.path);
-  }
-  async getFileTags(path2) {
-    var _a;
-    const file = this.vault.getAbstractFileByPath(path2);
-    if (!(file instanceof import_obsidian.TFile)) {
-      return [];
-    }
-    const cache = this.app.metadataCache.getFileCache(file);
-    if (!cache) {
-      return [];
-    }
-    const tags = [];
-    if (cache.tags) {
-      for (const tag of cache.tags) {
-        tags.push(tag.tag);
-      }
-    }
-    if ((_a = cache.frontmatter) == null ? void 0 : _a.tags) {
-      const frontmatterTags = cache.frontmatter.tags;
-      if (Array.isArray(frontmatterTags)) {
-        tags.push(
-          ...frontmatterTags.map(
-            (tag) => tag.startsWith("#") ? tag : `#${tag}`
-          )
-        );
-      } else if (typeof frontmatterTags === "string") {
-        tags.push(
-          frontmatterTags.startsWith("#") ? frontmatterTags : `#${frontmatterTags}`
-        );
-      }
-    }
-    return [...new Set(tags)];
-  }
-  async updateFileTags(path2, tags) {
-    const file = this.vault.getAbstractFileByPath(path2);
-    if (!(file instanceof import_obsidian.TFile)) {
-      throw new Error(`File not found: ${path2}`);
-    }
-    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-      frontmatter.tags = tags.map(
-        (tag) => tag.startsWith("#") ? tag.substring(1) : tag
-      );
-    });
-  }
-};
+init_vault_adapter();
 
 // src/unified-diff.ts
 function createUnifiedDiff(oldText, newText, filePath) {
@@ -1662,6 +2677,13 @@ Use the file system tools to read the file, make the edits, and write it back.`;
       }
     });
     try {
+      const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+      const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+      const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+      const tagManager = new TagManager2(vaultAdapter);
+      const allTags = Array.from(tagManager.getAllTags().keys()).slice(0, 20);
+      const existingTagsExample = allTags.length > 0 ? `Existing tags example (please follow the hierarchical style of these tags first):
+${allTags.join("\n")}` : "";
       const response = await this.sendMessage({
         method: "session/prompt",
         params: {
@@ -1669,10 +2691,18 @@ Use the file system tools to read the file, make the edits, and write it back.`;
           prompt: [
             {
               type: "text",
-              text: `Please suggest tags for the file at ${filePath}. Return only a JSON array of tag strings, no other text.
+              text: `Please generate tags for the file at ${filePath}. Follow these rules strictly:
+1. Tags must use hierarchical format separated by slashes, e.g. "ai/machine-learning/transformer", "engineering/method/prompt-engineering"
+2. Each level uses kebab-case lowercase, only letters, numbers and hyphens are allowed, no spaces or special characters
+3. Recommended hierarchy depth is 2-4 levels, do not exceed 4 levels
+4. ${existingTagsExample}
+5. Try to use existing prefix hierarchies for new tags, avoid creating unnecessary new top-level categories
+6. Control the number of tags between 3-5, prioritize the most relevant tags that best represent the content
+7. Return only a JSON array of tag strings, no other text, explanations or markdown formatting, do not include json markers
 
 File content:
-${content}`
+${content.slice(0, 3e3)}${content.length > 3e3 ? "..." : ""}
+`
             }
           ]
         }
@@ -1681,11 +2711,13 @@ ${content}`
       if (response.error) {
         throw new Error(response.error.message);
       }
-      const resultText = messageChunks.join("");
+      const resultText = messageChunks.join("").trim();
       try {
-        const tags = JSON.parse(resultText);
+        const cleanedText = resultText.replace(/```json|```/g, "").trim();
+        const tags = JSON.parse(cleanedText);
         return Array.isArray(tags) ? tags : [];
-      } catch (e) {
+      } catch (parseError) {
+        console.warn("Tag parsing failed, raw response:", resultText);
         return [];
       }
     } catch (error) {
@@ -1729,7 +2761,7 @@ var os = __toESM(require("os"));
 var path = __toESM(require("path"));
 
 // src/cursor-image-modal.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 function promptCursorImageGeneration(app, request) {
   return new Promise((resolve) => {
     var _a;
@@ -1740,7 +2772,7 @@ function promptCursorImageGeneration(app, request) {
       resolved = true;
       resolve(decision);
     };
-    const modal = new import_obsidian5.Modal(app);
+    const modal = new import_obsidian6.Modal(app);
     modal.titleEl.setText("Generate image");
     const body = modal.contentEl;
     body.addClass("cursor-image-modal");
@@ -1810,7 +2842,7 @@ function promptCursorImageGeneration(app, request) {
 }
 
 // src/cursor-plan-modal.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 function promptCursorPlan(app, request) {
   return new Promise((resolve) => {
     var _a, _b;
@@ -1821,7 +2853,7 @@ function promptCursorPlan(app, request) {
       resolved = true;
       resolve(decision);
     };
-    const modal = new import_obsidian6.Modal(app);
+    const modal = new import_obsidian7.Modal(app);
     modal.titleEl.setText(((_a = request.name) == null ? void 0 : _a.trim()) || "Cursor plan");
     const body = modal.contentEl;
     body.addClass("cursor-plan-modal");
@@ -1908,7 +2940,7 @@ function promptCursorPlan(app, request) {
 }
 
 // src/cursor-question-modal.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 function promptCursorQuestions(app, request) {
   return new Promise((resolve) => {
     var _a;
@@ -1919,7 +2951,7 @@ function promptCursorQuestions(app, request) {
       resolved = true;
       resolve(decision);
     };
-    const modal = new import_obsidian7.Modal(app);
+    const modal = new import_obsidian8.Modal(app);
     modal.titleEl.setText(((_a = request.title) == null ? void 0 : _a.trim()) || "Cursor question");
     const body = modal.contentEl;
     body.addClass("cursor-question-modal");
@@ -3123,6 +4155,13 @@ Use the file system tools to read the file, make the edits, and write it back.`;
       }
     });
     try {
+      const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+      const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+      const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+      const tagManager = new TagManager2(vaultAdapter);
+      const allTags = Array.from(tagManager.getAllTags().keys()).slice(0, 20);
+      const existingTagsExample = allTags.length > 0 ? `Existing tags example (please follow the hierarchical style of these tags first):
+${allTags.join("\n")}` : "";
       const response = await this.sendMessage({
         method: "session/prompt",
         params: {
@@ -3130,10 +4169,18 @@ Use the file system tools to read the file, make the edits, and write it back.`;
           prompt: [
             {
               type: "text",
-              text: `Please suggest tags for the file at ${filePath}. Return only a JSON array of tag strings, no other text.
+              text: `Please generate tags for the file at ${filePath}. Follow these rules strictly:
+1. Tags must use hierarchical format separated by slashes, e.g. "ai/machine-learning/transformer", "engineering/method/prompt-engineering"
+2. Each level uses kebab-case lowercase, only letters, numbers and hyphens are allowed, no spaces or special characters
+3. Recommended hierarchy depth is 2-4 levels, do not exceed 4 levels
+4. ${existingTagsExample}
+5. Try to use existing prefix hierarchies for new tags, avoid creating unnecessary new top-level categories
+6. Control the number of tags between 3-5, prioritize the most relevant tags that best represent the content
+7. Return only a JSON array of tag strings, no other text, explanations or markdown formatting, do not include json markers
 
 File content:
-${content}`
+${content.slice(0, 3e3)}${content.length > 3e3 ? "..." : ""}
+`
             }
           ]
         }
@@ -3142,11 +4189,13 @@ ${content}`
       if (response.error) {
         throw new Error(response.error.message);
       }
-      const resultText = messageChunks.join("");
+      const resultText = messageChunks.join("").trim();
       try {
-        const tags = JSON.parse(resultText);
+        const cleanedText = resultText.replace(/```json|```/g, "").trim();
+        const tags = JSON.parse(cleanedText);
         return Array.isArray(tags) ? tags : [];
-      } catch (e) {
+      } catch (parseError) {
+        console.warn("Tag parsing failed, raw response:", resultText);
         return [];
       }
     } catch (error) {
@@ -3828,6 +4877,13 @@ Use the file system tools to read the file, make the edits, and write it back.`;
       }
     });
     try {
+      const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+      const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+      const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+      const tagManager = new TagManager2(vaultAdapter);
+      const allTags = Array.from(tagManager.getAllTags().keys()).slice(0, 20);
+      const existingTagsExample = allTags.length > 0 ? `Existing tags example (please follow the hierarchical style of these tags first):
+${allTags.join("\n")}` : "";
       const response = await this.sendMessage({
         method: "session/prompt",
         params: {
@@ -3835,10 +4891,18 @@ Use the file system tools to read the file, make the edits, and write it back.`;
           prompt: [
             {
               type: "text",
-              text: `Please suggest tags for the file at ${filePath}. Return only a JSON array of tag strings, no other text.
+              text: `Please generate tags for the file at ${filePath}. Follow these rules strictly:
+1. Tags must use hierarchical format separated by slashes, e.g. "ai/machine-learning/transformer", "engineering/method/prompt-engineering"
+2. Each level uses kebab-case lowercase, only letters, numbers and hyphens are allowed, no spaces or special characters
+3. Recommended hierarchy depth is 2-4 levels, do not exceed 4 levels
+4. ${existingTagsExample}
+5. Try to use existing prefix hierarchies for new tags, avoid creating unnecessary new top-level categories
+6. Control the number of tags between 3-5, prioritize the most relevant tags that best represent the content
+7. Return only a JSON array of tag strings, no other text, explanations or markdown formatting, do not include json markers
 
 File content:
-${content}`
+${content.slice(0, 3e3)}${content.length > 3e3 ? "..." : ""}
+`
             }
           ]
         }
@@ -3847,11 +4911,13 @@ ${content}`
       if (response.error) {
         throw new Error(response.error.message);
       }
-      const resultText = messageChunks.join("");
+      const resultText = messageChunks.join("").trim();
       try {
-        const tags = JSON.parse(resultText);
+        const cleanedText = resultText.replace(/```json|```/g, "").trim();
+        const tags = JSON.parse(cleanedText);
         return Array.isArray(tags) ? tags : [];
-      } catch (e) {
+      } catch (parseError) {
+        console.warn("Tag parsing failed, raw response:", resultText);
         return [];
       }
     } catch (error) {
@@ -3889,7 +4955,7 @@ ${content}`
 };
 
 // src/chat-view.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 
 // src/context-builder.ts
 var DEFAULT_MAX_TOKENS = 1200;
@@ -4030,7 +5096,13 @@ ${item.content}`;
     };
   }
   async buildTagContext(tag, tokenBudget) {
-    const files = this.getFilesByTag(tag);
+    let files = [];
+    if (tag.endsWith("/*")) {
+      const prefix = tag.slice(0, -2);
+      files = this.getFilesByTagPrefix(prefix);
+    } else {
+      files = this.getFilesByTag(tag);
+    }
     if (files.length === 0) {
       return null;
     }
@@ -4242,10 +5314,41 @@ ${excerpt}`);
       return false;
     });
   }
+  /**
+   * 根据标签前缀获取文件，支持层级查询
+   * 例如前缀 "ai/" 匹配所有 ai/ 开头的标签，如 ai/machine-learning、ai/nlp 等
+   */
+  getFilesByTagPrefix(prefix) {
+    const normalizedPrefix = prefix.startsWith("#") ? prefix : `#${prefix}`;
+    const files = this.app.vault.getMarkdownFiles();
+    return files.filter((file) => {
+      var _a, _b;
+      const cache = this.app.metadataCache.getFileCache(file);
+      if (!cache)
+        return false;
+      if ((_a = cache.tags) == null ? void 0 : _a.some((t) => t.tag.startsWith(normalizedPrefix))) {
+        return true;
+      }
+      const frontmatterTags = (_b = cache.frontmatter) == null ? void 0 : _b.tags;
+      if (!frontmatterTags)
+        return false;
+      if (Array.isArray(frontmatterTags)) {
+        return frontmatterTags.some((t) => {
+          const normalizedTag = `#${t.replace(/^#/, "")}`;
+          return normalizedTag.startsWith(normalizedPrefix);
+        });
+      }
+      if (typeof frontmatterTags === "string") {
+        const normalizedTag = `#${frontmatterTags.replace(/^#/, "")}`;
+        return normalizedTag.startsWith(normalizedPrefix);
+      }
+      return false;
+    });
+  }
 };
 
 // src/session-store.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 var SESSION_ROOT = ".obsidian/claude";
 var SESSION_FOLDER = `${SESSION_ROOT}/sessions`;
 var CURRENT_POINTER_FILE = `${SESSION_ROOT}/current-session.json`;
@@ -4373,7 +5476,7 @@ var SessionStore = class {
       return;
     }
     const file = this.app.vault.getAbstractFileByPath(this.sessionFilePath(activeId));
-    if (file instanceof import_obsidian8.TFile) {
+    if (file instanceof import_obsidian9.TFile) {
       await this.app.vault.delete(file, false);
     }
   }
@@ -4381,7 +5484,7 @@ var SessionStore = class {
     await this.ensureSessionFolder();
     const content = JSON.stringify({ sessionId }, null, 2);
     const file = this.app.vault.getAbstractFileByPath(CURRENT_POINTER_FILE);
-    if (file instanceof import_obsidian8.TFile) {
+    if (file instanceof import_obsidian9.TFile) {
       await this.app.vault.modify(file, content);
     } else {
       await this.safeCreateFile(CURRENT_POINTER_FILE, content);
@@ -4389,7 +5492,7 @@ var SessionStore = class {
   }
   async getCurrentSessionId() {
     const file = this.app.vault.getAbstractFileByPath(CURRENT_POINTER_FILE);
-    if (!(file instanceof import_obsidian8.TFile)) {
+    if (!(file instanceof import_obsidian9.TFile)) {
       return null;
     }
     const raw = await this.app.vault.read(file);
@@ -4415,7 +5518,7 @@ var SessionStore = class {
     const path2 = this.sessionFilePath(session.id);
     const file = this.app.vault.getAbstractFileByPath(path2);
     const content = JSON.stringify(session, null, 2);
-    if (file instanceof import_obsidian8.TFile) {
+    if (file instanceof import_obsidian9.TFile) {
       await this.app.vault.modify(file, content);
     } else {
       const adapter = this.app.vault.adapter;
@@ -4428,11 +5531,11 @@ var SessionStore = class {
   }
   async ensureSessionFolder() {
     const rootFolder = this.app.vault.getAbstractFileByPath(SESSION_ROOT);
-    if (!(rootFolder instanceof import_obsidian8.TFolder)) {
+    if (!(rootFolder instanceof import_obsidian9.TFolder)) {
       await this.safeCreateFolder(SESSION_ROOT);
     }
     const sessionFolder = this.app.vault.getAbstractFileByPath(SESSION_FOLDER);
-    if (!(sessionFolder instanceof import_obsidian8.TFolder)) {
+    if (!(sessionFolder instanceof import_obsidian9.TFolder)) {
       await this.safeCreateFolder(SESSION_FOLDER);
     }
   }
@@ -4462,8 +5565,8 @@ var SessionStore = class {
   }
   async listSessionFiles() {
     const folder = this.app.vault.getAbstractFileByPath(SESSION_FOLDER);
-    if (folder instanceof import_obsidian8.TFolder) {
-      return folder.children.filter((child) => child instanceof import_obsidian8.TFile).map((child) => child.path);
+    if (folder instanceof import_obsidian9.TFolder) {
+      return folder.children.filter((child) => child instanceof import_obsidian9.TFile).map((child) => child.path);
     }
     const adapter = this.app.vault.adapter;
     if (adapter == null ? void 0 : adapter.list) {
@@ -4478,7 +5581,7 @@ var SessionStore = class {
   }
   async readSessionFile(path2) {
     const file = this.app.vault.getAbstractFileByPath(path2);
-    if (file instanceof import_obsidian8.TFile) {
+    if (file instanceof import_obsidian9.TFile) {
       return await this.app.vault.read(file);
     }
     const adapter = this.app.vault.adapter;
@@ -4493,7 +5596,7 @@ var SessionStore = class {
   }
   async safeCreateFile(path2, content) {
     const existing = this.app.vault.getAbstractFileByPath(path2);
-    if (existing instanceof import_obsidian8.TFile) {
+    if (existing instanceof import_obsidian9.TFile) {
       await this.app.vault.modify(existing, content);
       return;
     }
@@ -4503,7 +5606,7 @@ var SessionStore = class {
       const message = this.getErrorMessage(error);
       if (message.includes("already exists") || message.includes("eexist")) {
         const existingRetry = this.app.vault.getAbstractFileByPath(path2);
-        if (existingRetry instanceof import_obsidian8.TFile) {
+        if (existingRetry instanceof import_obsidian9.TFile) {
           await this.app.vault.modify(existingRetry, content);
           return;
         }
@@ -4536,7 +5639,7 @@ var SessionStore = class {
   }
   async migrateLegacySession() {
     const legacyFile = this.app.vault.getAbstractFileByPath(LEGACY_SESSION_FILE);
-    if (!(legacyFile instanceof import_obsidian8.TFile)) {
+    if (!(legacyFile instanceof import_obsidian9.TFile)) {
       return null;
     }
     const raw = await this.app.vault.read(legacyFile);
@@ -4561,7 +5664,7 @@ var SessionStore = class {
 };
 
 // src/todo-sync.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 var INBOX_PATH = "Agent Inbox.md";
 var TodoSync = class {
   constructor(app) {
@@ -4604,7 +5707,7 @@ ${todoLines}`;
   }
   async ensureInboxFile() {
     const existing = this.app.vault.getAbstractFileByPath(INBOX_PATH);
-    if (existing instanceof import_obsidian9.TFile) {
+    if (existing instanceof import_obsidian10.TFile) {
       return existing;
     }
     return await this.app.vault.create(INBOX_PATH, "# Agent Inbox\n");
@@ -4612,7 +5715,7 @@ ${todoLines}`;
   async resolveTargetFile(target, currentFilePath) {
     if (target === "current" && currentFilePath) {
       const current = this.app.vault.getAbstractFileByPath(currentFilePath);
-      if (current instanceof import_obsidian9.TFile) {
+      if (current instanceof import_obsidian10.TFile) {
         return current;
       }
     }
@@ -4621,7 +5724,7 @@ ${todoLines}`;
 };
 
 // src/wiki-detector.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 var WikiDetector = class {
   constructor(app, settingsProvider) {
     this.app = app;
@@ -4639,29 +5742,29 @@ var WikiDetector = class {
     return `${root}/${relativePath}`;
   }
   fileExists(path2) {
-    return this.app.vault.getAbstractFileByPath(path2) instanceof import_obsidian10.TFile;
+    return this.app.vault.getAbstractFileByPath(path2) instanceof import_obsidian11.TFile;
   }
   folderExists(path2) {
-    return this.app.vault.getAbstractFileByPath(path2) instanceof import_obsidian10.TFolder;
+    return this.app.vault.getAbstractFileByPath(path2) instanceof import_obsidian11.TFolder;
   }
   listSubdirs(parentPath) {
     const parent = this.app.vault.getAbstractFileByPath(parentPath);
-    if (!(parent instanceof import_obsidian10.TFolder)) {
+    if (!(parent instanceof import_obsidian11.TFolder)) {
       return [];
     }
-    return parent.children.filter((child) => child instanceof import_obsidian10.TFolder).map((child) => child.name).sort();
+    return parent.children.filter((child) => child instanceof import_obsidian11.TFolder).map((child) => child.name).sort();
   }
   countMarkdownFiles(folderPath) {
     const folder = this.app.vault.getAbstractFileByPath(folderPath);
-    if (!(folder instanceof import_obsidian10.TFolder)) {
+    if (!(folder instanceof import_obsidian11.TFolder)) {
       return 0;
     }
     let count = 0;
     const walk = (f) => {
       for (const child of f.children) {
-        if (child instanceof import_obsidian10.TFile && child.extension === "md") {
+        if (child instanceof import_obsidian11.TFile && child.extension === "md") {
           count++;
-        } else if (child instanceof import_obsidian10.TFolder) {
+        } else if (child instanceof import_obsidian11.TFolder) {
           walk(child);
         }
       }
@@ -4671,15 +5774,15 @@ var WikiDetector = class {
   }
   countAllFiles(folderPath) {
     const folder = this.app.vault.getAbstractFileByPath(folderPath);
-    if (!(folder instanceof import_obsidian10.TFolder)) {
+    if (!(folder instanceof import_obsidian11.TFolder)) {
       return 0;
     }
     let count = 0;
     const walk = (f) => {
       for (const child of f.children) {
-        if (child instanceof import_obsidian10.TFile) {
+        if (child instanceof import_obsidian11.TFile) {
           count++;
-        } else if (child instanceof import_obsidian10.TFolder) {
+        } else if (child instanceof import_obsidian11.TFolder) {
           walk(child);
         }
       }
@@ -4731,7 +5834,7 @@ var WikiDetector = class {
   async getClaudeMdContent() {
     const path2 = this.resolve("CLAUDE.md");
     const file = this.app.vault.getAbstractFileByPath(path2);
-    if (!(file instanceof import_obsidian10.TFile)) {
+    if (!(file instanceof import_obsidian11.TFile)) {
       return null;
     }
     return this.app.vault.cachedRead(file);
@@ -4739,7 +5842,7 @@ var WikiDetector = class {
   async getIndexContent() {
     const path2 = this.resolve("wiki/indexes/index.md");
     const file = this.app.vault.getAbstractFileByPath(path2);
-    if (!(file instanceof import_obsidian10.TFile)) {
+    if (!(file instanceof import_obsidian11.TFile)) {
       return null;
     }
     return this.app.vault.cachedRead(file);
@@ -4747,15 +5850,15 @@ var WikiDetector = class {
   async getLegacyFileList() {
     const legacyPath = this.resolve("legacy");
     const folder = this.app.vault.getAbstractFileByPath(legacyPath);
-    if (!(folder instanceof import_obsidian10.TFolder)) {
+    if (!(folder instanceof import_obsidian11.TFolder)) {
       return [];
     }
     const files = [];
     const walk = (f) => {
       for (const child of f.children) {
-        if (child instanceof import_obsidian10.TFile) {
+        if (child instanceof import_obsidian11.TFile) {
           files.push(child.path);
-        } else if (child instanceof import_obsidian10.TFolder) {
+        } else if (child instanceof import_obsidian11.TFolder) {
           walk(child);
         }
       }
@@ -4766,15 +5869,15 @@ var WikiDetector = class {
   listRawFiles() {
     const rawPath = this.resolve("raw");
     const folder = this.app.vault.getAbstractFileByPath(rawPath);
-    if (!(folder instanceof import_obsidian10.TFolder)) {
+    if (!(folder instanceof import_obsidian11.TFolder)) {
       return [];
     }
     const files = [];
     const walk = (f) => {
       for (const child of f.children) {
-        if (child instanceof import_obsidian10.TFile && child.extension === "md") {
+        if (child instanceof import_obsidian11.TFile && child.extension === "md") {
           files.push(child.path);
-        } else if (child instanceof import_obsidian10.TFolder) {
+        } else if (child instanceof import_obsidian11.TFolder) {
           walk(child);
         }
       }
@@ -4790,12 +5893,12 @@ var WikiDetector = class {
     var _a;
     const summariesPath = this.resolve("wiki/summaries");
     const folder = this.app.vault.getAbstractFileByPath(summariesPath);
-    if (!(folder instanceof import_obsidian10.TFolder)) {
+    if (!(folder instanceof import_obsidian11.TFolder)) {
       return /* @__PURE__ */ new Set();
     }
     const ingested = /* @__PURE__ */ new Set();
     for (const child of folder.children) {
-      if (!(child instanceof import_obsidian10.TFile) || child.extension !== "md")
+      if (!(child instanceof import_obsidian11.TFile) || child.extension !== "md")
         continue;
       const cache = this.app.metadataCache.getFileCache(child);
       const sources = (_a = cache == null ? void 0 : cache.frontmatter) == null ? void 0 : _a.sources;
@@ -4817,7 +5920,7 @@ var USER_MESSAGE_PREVIEW_LINES = 10;
 var MAX_PROMPT_HISTORY_MESSAGES = 8;
 var MAX_PROMPT_HISTORY_CHARS = 12e3;
 var MAX_PROMPT_HISTORY_MESSAGE_CHARS = 1800;
-var ChatView = class extends import_obsidian11.ItemView {
+var ChatView = class extends import_obsidian12.ItemView {
   constructor(leaf, claudeConnection, settingsProvider, onProviderChange, wikiDetector) {
     super(leaf);
     this.shellElements = [];
@@ -4853,7 +5956,7 @@ var ChatView = class extends import_obsidian11.ItemView {
     this.streamingRawContent = "";
     this.streamingRenderTimer = null;
     this.thinkingRenderTimer = null;
-    this.messageRenderComponent = new import_obsidian11.Component();
+    this.messageRenderComponent = new import_obsidian12.Component();
     this.thinkingContainer = null;
     this.thinkingRawContent = "";
     this.isThinkingCollapsed = true;
@@ -5052,13 +6155,13 @@ var ChatView = class extends import_obsidian11.ItemView {
       cls: "claude-session-button claude-session-trigger",
       attr: { "aria-label": "Session history", title: "Session history" }
     });
-    (0, import_obsidian11.setIcon)(sessionPickerButton, "history");
+    (0, import_obsidian12.setIcon)(sessionPickerButton, "history");
     this.sessionNewButton = sessionControls.createEl("button", {
       cls: "claude-session-button",
       title: "New session",
       attr: { "aria-label": "New session" }
     });
-    (0, import_obsidian11.setIcon)(this.sessionNewButton, "plus");
+    (0, import_obsidian12.setIcon)(this.sessionNewButton, "plus");
     this.sessionNewButton.addEventListener(
       "click",
       () => void this.startNewSession()
@@ -5068,11 +6171,20 @@ var ChatView = class extends import_obsidian11.ItemView {
       title: "Fork session",
       attr: { "aria-label": "Fork session" }
     });
-    (0, import_obsidian11.setIcon)(this.sessionForkButton, "copy");
+    (0, import_obsidian12.setIcon)(this.sessionForkButton, "copy");
     this.sessionForkButton.addEventListener(
       "click",
       () => void this.forkCurrentSession()
     );
+    const tagManagerButton = sessionControls.createEl("button", {
+      cls: "claude-session-button",
+      title: "Tag Manager",
+      attr: { "aria-label": "Tag Manager" }
+    });
+    (0, import_obsidian12.setIcon)(tagManagerButton, "tags");
+    tagManagerButton.addEventListener("click", () => {
+      void this.openTagManagerPanel();
+    });
     const connectionStatus = headerRight.createEl("div", {
       cls: "connection-status"
     });
@@ -5338,10 +6450,10 @@ ${rendered}`;
       if (this.activeSessionId) {
         await this.ensureRemoteSession(this.activeSessionId, true);
       }
-      new import_obsidian11.Notice("Request cancelled and agent process restarted.");
+      new import_obsidian12.Notice("Request cancelled and agent process restarted.");
     } catch (error) {
       const message = (error == null ? void 0 : error.message) || String(error);
-      new import_obsidian11.Notice(`Request cancelled. Agent reconnect failed: ${message}`);
+      new import_obsidian12.Notice(`Request cancelled. Agent reconnect failed: ${message}`);
     }
   }
   restartAgentAfterCancel() {
@@ -5425,7 +6537,7 @@ ${rendered}`;
         this.permissionPromptEl = inputBody.createEl("div", {
           cls: "claude-permission-prompt hidden"
         });
-        this.inputArea = new import_obsidian11.TextAreaComponent(inputBody);
+        this.inputArea = new import_obsidian12.TextAreaComponent(inputBody);
         this.inputArea.inputEl.placeholder = "Type your message here... (Shift+Enter for new line)";
         this.inputArea.inputEl.rows = 3;
         this.inputArea.inputEl.addClass("claude-chat-input");
@@ -5439,7 +6551,7 @@ ${rendered}`;
           cls: "claudian-file-chip-icon",
           attr: { "aria-hidden": "true" }
         });
-        (0, import_obsidian11.setIcon)(fileChipIcon, "file-text");
+        (0, import_obsidian12.setIcon)(fileChipIcon, "file-text");
         this.fileChipLabel = this.fileChipContainer.createEl("span", {
           cls: "claudian-file-chip-name",
           text: ""
@@ -5513,7 +6625,7 @@ ${rendered}`;
           cls: "claude-chat-file-button-icon",
           attr: { "aria-hidden": "true" }
         });
-        (0, import_obsidian11.setIcon)(addFileIcon, "file-plus");
+        (0, import_obsidian12.setIcon)(addFileIcon, "file-plus");
         this.addFileButton.createEl("span", {
           cls: "claude-chat-file-button-label",
           text: "Add file"
@@ -5864,7 +6976,7 @@ ${rendered}`;
     const paths = [".claude/skills.json", "skills.json"];
     for (const path2 of paths) {
       const file = this.app.vault.getAbstractFileByPath(path2);
-      if (!(file instanceof import_obsidian11.TFile)) {
+      if (!(file instanceof import_obsidian12.TFile)) {
         continue;
       }
       try {
@@ -5882,7 +6994,7 @@ ${rendered}`;
     }
     const allFiles = this.app.vault.getAllLoadedFiles();
     const skillFiles = allFiles.filter(
-      (file) => file instanceof import_obsidian11.TFile && file.path.endsWith("SKILL.md")
+      (file) => file instanceof import_obsidian12.TFile && file.path.endsWith("SKILL.md")
     );
     for (const file of skillFiles) {
       try {
@@ -5947,7 +7059,7 @@ ${rendered}`;
     const folderQueryMatch = /^folder\(?(.+)?$/i.exec(query);
     if (folderQueryMatch) {
       const folderQuery = (folderQueryMatch[1] || "").replace(/[()]/g, "").trim().toLowerCase();
-      const folders = this.app.vault.getAllLoadedFiles().filter((file) => file instanceof import_obsidian11.TFolder);
+      const folders = this.app.vault.getAllLoadedFiles().filter((file) => file instanceof import_obsidian12.TFolder);
       folders.filter(
         (folder) => !folderQuery || folder.path.toLowerCase().includes(folderQuery)
       ).slice(0, 10).forEach((folder) => {
@@ -6046,7 +7158,7 @@ ${rendered}`;
           cls: "thinking-icon",
           attr: { "aria-hidden": "true" }
         });
-        (0, import_obsidian11.setIcon)(icon, "info");
+        (0, import_obsidian12.setIcon)(icon, "info");
         const title = header.createEl("span", {
           cls: "thinking-title",
           text: "Thinking"
@@ -6056,7 +7168,7 @@ ${rendered}`;
           attr: { "aria-label": "Toggle thinking section" }
         });
         const updateToggleIcon = () => {
-          (0, import_obsidian11.setIcon)(
+          (0, import_obsidian12.setIcon)(
             toggleBtn,
             this.isThinkingCollapsed ? "chevron-right" : "chevron-down"
           );
@@ -6094,14 +7206,14 @@ ${rendered}`;
       cls: "tool-header-icon",
       attr: { "aria-hidden": "true" }
     });
-    (0, import_obsidian11.setIcon)(toolHeaderIcon, "wrench");
+    (0, import_obsidian12.setIcon)(toolHeaderIcon, "wrench");
     header.createEl("span", { cls: "tool-header-text", text: "Actions" });
     const toggleBtn = header.createEl("button", {
       cls: "tool-calls-toggle",
       attr: { "aria-label": "Toggle actions section" }
     });
     const updateToggleIcon = () => {
-      (0, import_obsidian11.setIcon)(
+      (0, import_obsidian12.setIcon)(
         toggleBtn,
         this.isToolCallsCollapsed ? "chevron-right" : "chevron-down"
       );
@@ -6134,7 +7246,7 @@ ${rendered}`;
       cls: "plan-header-icon",
       attr: { "aria-hidden": "true" }
     });
-    (0, import_obsidian11.setIcon)(headerIcon, "list-checks");
+    (0, import_obsidian12.setIcon)(headerIcon, "list-checks");
     header.createEl("span", { cls: "plan-header-text", text: "Plan" });
     const progressEl = header.createEl("span", { cls: "plan-progress" });
     progressEl.dataset.total = "0";
@@ -6144,7 +7256,7 @@ ${rendered}`;
       attr: { "aria-label": "Toggle plan section" }
     });
     const updateToggleIcon = () => {
-      (0, import_obsidian11.setIcon)(
+      (0, import_obsidian12.setIcon)(
         toggleBtn,
         this.isPlanCollapsed ? "chevron-right" : "chevron-down"
       );
@@ -6180,11 +7292,11 @@ ${rendered}`;
       });
       const indicator = row.createEl("span", { cls: "plan-entry-indicator" });
       if (status === "completed" || status === "done") {
-        (0, import_obsidian11.setIcon)(indicator, "check");
+        (0, import_obsidian12.setIcon)(indicator, "check");
       } else if (status === "in_progress" || status === "running") {
-        (0, import_obsidian11.setIcon)(indicator, "loader");
+        (0, import_obsidian12.setIcon)(indicator, "loader");
       } else {
-        (0, import_obsidian11.setIcon)(indicator, "circle");
+        (0, import_obsidian12.setIcon)(indicator, "circle");
       }
       row.createEl("span", {
         cls: "plan-entry-text",
@@ -6231,7 +7343,7 @@ ${rendered}`;
       cls: "perm-prompt-desc"
     });
     const icon = desc.createEl("span", { cls: "perm-prompt-icon" });
-    (0, import_obsidian11.setIcon)(icon, "shield-question");
+    (0, import_obsidian12.setIcon)(icon, "shield-question");
     desc.createEl("span", { text: description || toolName });
     const pick = (id) => {
       var _a, _b;
@@ -6254,7 +7366,7 @@ ${rendered}`;
         cls: `perm-prompt-option ${variantClass}`
       });
       const iconEl = row.createEl("span", { cls: "perm-prompt-option-icon" });
-      (0, import_obsidian11.setIcon)(iconEl, isReject ? "x" : isAlways ? "shield-check" : "check");
+      (0, import_obsidian12.setIcon)(iconEl, isReject ? "x" : isAlways ? "shield-check" : "check");
       row.createEl("span", { text: opt.name || opt.optionId });
       row.onclick = () => pick(opt.optionId);
     }
@@ -6269,7 +7381,7 @@ ${rendered}`;
       cls: "perm-prompt-custom-send",
       attr: { "aria-label": "Send custom response" }
     });
-    (0, import_obsidian11.setIcon)(customSend, "send");
+    (0, import_obsidian12.setIcon)(customSend, "send");
     customSend.onclick = () => {
       const val = customInput.value.trim();
       if (val)
@@ -6349,7 +7461,7 @@ ${rendered}`;
     }
     this.updateSendButtonState(false);
     this.updateActivityState(false);
-    new import_obsidian11.Notice("Request cancelled");
+    new import_obsidian12.Notice("Request cancelled");
   }
   updateSendButtonState(isLoading) {
     if (isLoading) {
@@ -6372,7 +7484,7 @@ ${rendered}`;
     let message = this.inputArea.getValue().trim();
     if (!message || !this.claudeConnection.isConnected()) {
       if (!this.claudeConnection.isConnected()) {
-        new import_obsidian11.Notice(`Please connect to ${this.getProviderLabel()} first`);
+        new import_obsidian12.Notice(`Please connect to ${this.getProviderLabel()} first`);
       }
       return;
     }
@@ -7191,7 +8303,7 @@ tail -30 wiki/indexes/log.md
     for (const f of files) {
       try {
         const existing = this.app.vault.getAbstractFileByPath(f.path);
-        if (existing instanceof import_obsidian11.TFile) {
+        if (existing instanceof import_obsidian12.TFile) {
           await this.app.vault.modify(existing, f.content);
         } else {
           await this.app.vault.create(f.path, f.content);
@@ -7395,7 +8507,7 @@ ${content}`;
     if (!file) {
       file = await this.app.vault.create(path2, "# Agent Inbox\\n");
     }
-    if (file instanceof import_obsidian11.TFile) {
+    if (file instanceof import_obsidian12.TFile) {
       await this.app.workspace.getLeaf(false).openFile(file);
     }
   }
@@ -7620,7 +8732,7 @@ ${content}`;
           content
         );
       }
-      void import_obsidian11.MarkdownRenderer.render(
+      void import_obsidian12.MarkdownRenderer.render(
         this.app,
         normalized,
         contentEl,
@@ -7741,17 +8853,17 @@ ${content}`;
       return;
     const copyBtn = document.createElement("button");
     copyBtn.className = "copy-button";
-    (0, import_obsidian11.setIcon)(copyBtn, "copy");
+    (0, import_obsidian12.setIcon)(copyBtn, "copy");
     copyBtn.ariaLabel = "Copy message";
     copyBtn.onclick = async () => {
       const text = messageEl.textContent || "";
       try {
         await navigator.clipboard.writeText(text);
         copyBtn.classList.add("copied");
-        (0, import_obsidian11.setIcon)(copyBtn, "check");
+        (0, import_obsidian12.setIcon)(copyBtn, "check");
         setTimeout(() => {
           copyBtn.classList.remove("copied");
-          (0, import_obsidian11.setIcon)(copyBtn, "copy");
+          (0, import_obsidian12.setIcon)(copyBtn, "copy");
         }, 2e3);
       } catch (err) {
         console.error("Failed to copy:", err);
@@ -8005,7 +9117,7 @@ ${content}`;
       return;
     }
     const file = this.app.vault.getAbstractFileByPath(path2);
-    const label = file instanceof import_obsidian11.TFile ? file.basename : path2.split("/").pop() || path2;
+    const label = file instanceof import_obsidian12.TFile ? file.basename : path2.split("/").pop() || path2;
     this.fileChipLabel.textContent = label;
     this.fileChipLabel.title = path2;
     this.fileChipContainer.classList.remove("hidden");
@@ -8209,7 +9321,7 @@ ${content}`;
       await this.claudeConnection.setSessionConfigOption(configId, value);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      new import_obsidian11.Notice(`Failed to update ${configId}: ${message}`);
+      new import_obsidian12.Notice(`Failed to update ${configId}: ${message}`);
       const existing = this.activeConfigOptions.find((o) => o.id === configId);
       const select = this.configDropdowns.get(configId);
       if (existing && select) {
@@ -8467,7 +9579,7 @@ ${content}`;
         await this.claudeConnection.setSessionModel(selected.id);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        new import_obsidian11.Notice(`Failed to switch model: ${message}`);
+        new import_obsidian12.Notice(`Failed to switch model: ${message}`);
       }
     }
   }
@@ -8493,7 +9605,7 @@ ${content}`;
         await this.claudeConnection.setSessionModel(selected.id);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        new import_obsidian11.Notice(`Failed to switch thinking level: ${message}`);
+        new import_obsidian12.Notice(`Failed to switch thinking level: ${message}`);
       }
     }
   }
@@ -8901,7 +10013,7 @@ ${content}`;
       return;
     const session = await this.sessionStore.loadSession(sessionId);
     if (!session) {
-      new import_obsidian11.Notice("Failed to load session");
+      new import_obsidian12.Notice("Failed to load session");
       return;
     }
     this.activeSessionId = session.id;
@@ -8918,7 +10030,7 @@ ${content}`;
       await this.refreshSessionSelector();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      new import_obsidian11.Notice(`Failed to start new session: ${message}`);
+      new import_obsidian12.Notice(`Failed to start new session: ${message}`);
     }
   }
   async forkCurrentSession() {
@@ -8927,7 +10039,7 @@ ${content}`;
         this.activeSessionId || void 0
       );
       if (!session) {
-        new import_obsidian11.Notice("No session to fork");
+        new import_obsidian12.Notice("No session to fork");
         return;
       }
       this.activeSessionId = session.id;
@@ -8936,7 +10048,7 @@ ${content}`;
       await this.refreshSessionSelector();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      new import_obsidian11.Notice(`Failed to fork session: ${message}`);
+      new import_obsidian12.Notice(`Failed to fork session: ${message}`);
     }
   }
   loadSessionIntoView(session) {
@@ -8955,7 +10067,7 @@ ${content}`;
     try {
       const session = await this.sessionStore.loadSession(sessionId);
       if (!session) {
-        new import_obsidian11.Notice("Session not found");
+        new import_obsidian12.Notice("Session not found");
         return;
       }
       this.activeSessionId = session.id;
@@ -8964,7 +10076,7 @@ ${content}`;
       await this.refreshSessionSelector();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      new import_obsidian11.Notice(`Failed to open session: ${message}`);
+      new import_obsidian12.Notice(`Failed to open session: ${message}`);
     }
   }
   renderStoredMessage(message) {
@@ -9336,7 +10448,7 @@ ${content}`;
     const titleIcon = barLeft.createEl("span", {
       cls: "wiki-panel-title-icon"
     });
-    (0, import_obsidian11.setIcon)(titleIcon, "book-open");
+    (0, import_obsidian12.setIcon)(titleIcon, "book-open");
     barLeft.createEl("span", { cls: "wiki-panel-title", text: "LLM Wiki" });
     const barRight = panelHeader.createEl("div", {
       cls: "wiki-panel-bar-right"
@@ -9345,20 +10457,20 @@ ${content}`;
       cls: "wiki-panel-icon-btn",
       attr: { "aria-label": "Refresh wiki status", title: "Refresh" }
     });
-    (0, import_obsidian11.setIcon)(refreshBtn, "refresh-cw");
+    (0, import_obsidian12.setIcon)(refreshBtn, "refresh-cw");
     refreshBtn.addEventListener("click", () => this.refreshWikiPanel());
     const toggleBtn = barRight.createEl("button", {
       cls: "wiki-panel-icon-btn",
       attr: { "aria-label": "Toggle wiki panel", title: "Toggle" }
     });
-    (0, import_obsidian11.setIcon)(toggleBtn, "chevron-up");
+    (0, import_obsidian12.setIcon)(toggleBtn, "chevron-up");
     toggleBtn.addEventListener("click", () => {
       this.isWikiPanelCollapsed = !this.isWikiPanelCollapsed;
       this.wikiPanelEl.toggleClass(
         "wiki-panel--collapsed",
         this.isWikiPanelCollapsed
       );
-      (0, import_obsidian11.setIcon)(
+      (0, import_obsidian12.setIcon)(
         toggleBtn,
         this.isWikiPanelCollapsed ? "chevron-down" : "chevron-up"
       );
@@ -9379,7 +10491,7 @@ ${content}`;
         cls: "wiki-status-badge wiki-status-badge--ok"
       });
       const icon = badge.createEl("span", { cls: "wiki-status-badge-icon" });
-      (0, import_obsidian11.setIcon)(icon, "check-circle");
+      (0, import_obsidian12.setIcon)(icon, "check-circle");
       badge.createEl("span", {
         text: `${status.pageCount} pages \xB7 ${status.rawCount} sources`
       });
@@ -9388,7 +10500,7 @@ ${content}`;
         cls: "wiki-status-badge wiki-status-badge--empty"
       });
       const icon = badge.createEl("span", { cls: "wiki-status-badge-icon" });
-      (0, import_obsidian11.setIcon)(icon, "alert-circle");
+      (0, import_obsidian12.setIcon)(icon, "alert-circle");
       const missing = [];
       if (!status.hasClaudeMd)
         missing.push("CLAUDE.md");
@@ -9437,7 +10549,7 @@ ${content}`;
       if (a.disabled)
         btn.setAttribute("disabled", "true");
       const ic = btn.createEl("span", { cls: "wiki-action-btn-icon" });
-      (0, import_obsidian11.setIcon)(ic, a.icon);
+      (0, import_obsidian12.setIcon)(ic, a.icon);
       btn.createEl("span", { text: a.label });
       btn.addEventListener("click", () => {
         if (a.pick) {
@@ -9479,8 +10591,375 @@ ${content}`;
     modal.open();
   }
   /* Styles are now managed by Tailwind CSS in src/styles.css → styles.css */
+  async openTagManagerPanel() {
+    const modal = new import_obsidian12.Modal(this.app);
+    modal.setTitle("Tag Manager");
+    modal.contentEl.addClass("tag-manager-modal");
+    const container = modal.contentEl.createEl("div", { cls: "tag-manager-container" });
+    container.style.minHeight = "400px";
+    container.style.maxHeight = "70vh";
+    container.style.overflowY = "auto";
+    container.createEl("div", { text: "Loading tags...", cls: "tag-manager-loading-text" });
+    modal.open();
+    try {
+      const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+      const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+      const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+      const tagManager = new TagManager2(vaultAdapter);
+      await tagManager.learnFromExistingTags();
+      const stats = await tagManager.generateStats();
+      const allTags = tagManager.getAllTags();
+      container.empty();
+      const statsBar = container.createEl("div", { cls: "tag-manager-stats" });
+      this.renderTagStat(statsBar, "Total", stats.totalTags.toString());
+      this.renderTagStat(statsBar, "Unique", stats.uniqueTags.toString());
+      this.renderTagStat(statsBar, "Hierarchical", stats.hierarchicalTagsCount.toString());
+      this.renderTagStat(statsBar, "Flat", stats.flatTagsCount.toString());
+      const actions = container.createEl("div", { cls: "tag-manager-actions" });
+      const refreshBtn = actions.createEl("button", { cls: "tag-manager-action-btn" });
+      (0, import_obsidian12.setIcon)(refreshBtn.createEl("span", { cls: "tag-manager-action-icon" }), "refresh");
+      refreshBtn.createEl("span", { text: "Refresh" });
+      refreshBtn.onclick = async () => {
+        container.empty();
+        container.createEl("div", { text: "Loading tags...", cls: "tag-manager-loading-text" });
+        await tagManager.learnFromExistingTags();
+        const newStats = await tagManager.generateStats();
+        const newAllTags = tagManager.getAllTags();
+        this.renderTagTreeInModal(container, newAllTags, tagManager, modal);
+      };
+      if (this.claudeConnection && this.claudeConnection.isConnected()) {
+        const auditBtn = actions.createEl("button", { cls: "tag-manager-action-btn" });
+        (0, import_obsidian12.setIcon)(auditBtn.createEl("span", { cls: "tag-manager-action-icon" }), "search");
+        auditBtn.createEl("span", { text: "Audit All" });
+        auditBtn.onclick = async () => {
+          modal.close();
+          await this.runTagAuditFromModal();
+        };
+        const fixBtn = actions.createEl("button", { cls: "tag-manager-action-btn" });
+        (0, import_obsidian12.setIcon)(fixBtn.createEl("span", { cls: "tag-manager-action-icon" }), "wand-glyph");
+        fixBtn.createEl("span", { text: "Auto-Fix Flat" });
+        fixBtn.onclick = async () => {
+          modal.close();
+          await this.runAutoFixFromModal();
+        };
+      }
+      const treeContainer = container.createEl("div", { cls: "tag-manager-tree" });
+      this.renderTagTreeInModal(treeContainer, allTags, tagManager, modal);
+    } catch (error) {
+      container.empty();
+      container.createEl("div", {
+        text: `Failed to load tags: ${error.message}`,
+        cls: "tag-manager-error"
+      });
+    }
+  }
+  renderTagStat(parent, label, value) {
+    const stat = parent.createEl("div", { cls: "tag-manager-stat" });
+    stat.createEl("span", { text: value, cls: "tag-manager-stat-value" });
+    stat.createEl("span", { text: label, cls: "tag-manager-stat-label" });
+  }
+  renderTagTreeInModal(container, allTags, tagManager, modal) {
+    const buildTree = (tags) => {
+      const root2 = {
+        name: "All Tags",
+        fullPath: "",
+        count: 0,
+        children: /* @__PURE__ */ new Map(),
+        isHierarchical: false
+      };
+      const sorted = Array.from(tags.entries()).sort((a, b) => b[1] - a[1]);
+      for (const [tag, count] of sorted) {
+        const parts = tag.split("/");
+        let current = root2;
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          const path2 = parts.slice(0, i + 1).join("/");
+          if (!current.children.has(part)) {
+            current.children.set(part, {
+              name: part,
+              fullPath: path2,
+              count: 0,
+              children: /* @__PURE__ */ new Map(),
+              isHierarchical: i > 0 || parts.length > 1
+            });
+          }
+          const child = current.children.get(part);
+          if (i === parts.length - 1) {
+            child.count = count;
+            child.isHierarchical = parts.length > 1;
+          }
+          current = child;
+        }
+      }
+      return root2;
+    };
+    const renderNode = (parent, node, depth) => {
+      if (depth > 0) {
+        const row = parent.createEl("div", { cls: "tag-tree-row" });
+        row.style.paddingLeft = `${depth * 16}px`;
+        if (node.children.size > 0) {
+          const arrow = row.createEl("span", { cls: "tag-tree-arrow" });
+          (0, import_obsidian12.setIcon)(arrow, "right-triangle");
+          arrow.style.cursor = "pointer";
+          arrow.style.marginRight = "4px";
+          arrow.style.transition = "transform 0.15s";
+          const childrenContainer = parent.createEl("div", { cls: "tag-tree-children" });
+          arrow.onclick = () => {
+            const isCollapsed = childrenContainer.hasClass("collapsed");
+            if (isCollapsed) {
+              childrenContainer.removeClass("collapsed");
+              arrow.style.transform = "rotate(90deg)";
+            } else {
+              childrenContainer.addClass("collapsed");
+              arrow.style.transform = "rotate(0deg)";
+            }
+          };
+          for (const child of node.children.values()) {
+            renderNode(childrenContainer, child, depth + 1);
+          }
+        } else {
+          row.createEl("span", { cls: "tag-tree-spacer", text: "  " });
+        }
+        const nameSpan = row.createEl("span", { cls: "tag-tree-name", text: node.name });
+        if (!node.isHierarchical) {
+          nameSpan.addClass("tag-flat");
+        }
+        if (node.count > 0) {
+          row.createEl("span", { cls: "tag-tree-count", text: node.count.toString() });
+        }
+        if (node.children.size === 0 && node.count > 0) {
+          const actionGroup = row.createEl("span", { cls: "tag-tree-actions" });
+          const findBtn = actionGroup.createEl("span", { cls: "tag-tree-action", attr: { "aria-label": "Find similar" } });
+          (0, import_obsidian12.setIcon)(findBtn, "search");
+          findBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const similar = tagManager.findSimilar(node.fullPath, 0.5);
+            if (similar.length === 0) {
+              new import_obsidian12.Notice(`No similar tags found for "${node.fullPath}"`);
+              return;
+            }
+            let message = `Tags similar to "${node.fullPath}":
+
+`;
+            similar.forEach((s, i) => {
+              message += `${i + 1}. ${s.tag} (${(s.similarity * 100).toFixed(0)}% similar)
+`;
+            });
+            new import_obsidian12.Notice(message);
+          };
+          const renameBtn = actionGroup.createEl("span", { cls: "tag-tree-action", attr: { "aria-label": "Rename" } });
+          (0, import_obsidian12.setIcon)(renameBtn, "pencil");
+          renameBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const newName = await this.showTagRenameDialog(node.fullPath);
+            if (newName && newName !== node.fullPath) {
+              const result = await tagManager.mergeTags(node.fullPath, newName);
+              new import_obsidian12.Notice(`\u2705 Renamed "${node.fullPath}" \u2192 "${newName}" in ${result.updatedFiles} files`);
+              modal.close();
+            }
+          };
+          const filesBtn = actionGroup.createEl("span", { cls: "tag-tree-action", attr: { "aria-label": "Show files" } });
+          (0, import_obsidian12.setIcon)(filesBtn, "file-text");
+          filesBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const normalized = node.fullPath.startsWith("#") ? node.fullPath : `#${node.fullPath}`;
+            const files = this.app.vault.getMarkdownFiles().filter((file) => {
+              var _a, _b;
+              const cache = this.app.metadataCache.getFileCache(file);
+              if (!cache)
+                return false;
+              if ((_a = cache.tags) == null ? void 0 : _a.some((t) => t.tag === normalized))
+                return true;
+              const fm = (_b = cache.frontmatter) == null ? void 0 : _b.tags;
+              if (Array.isArray(fm))
+                return fm.some((t) => `#${t.replace(/^#/, "")}` === normalized);
+              return false;
+            });
+            if (files.length === 0) {
+              new import_obsidian12.Notice(`No files with tag "${node.fullPath}"`);
+              return;
+            }
+            let message = `Files tagged "${node.fullPath}" (${files.length}):
+
+`;
+            files.forEach((f, i) => {
+              message += `${i + 1}. ${f.path}
+`;
+            });
+            new import_obsidian12.Notice(message);
+          };
+        }
+      }
+      if (depth === 0) {
+        for (const child of node.children.values()) {
+          renderNode(parent, child, depth + 1);
+        }
+      }
+    };
+    const root = buildTree(allTags);
+    renderNode(container, root, 0);
+  }
+  showTagRenameDialog(currentTag) {
+    return new Promise((resolve) => {
+      const modal = new import_obsidian12.Modal(this.app);
+      modal.setTitle("Rename Tag");
+      const content = modal.contentEl.createEl("div");
+      content.createEl("p", { text: `Current: ${currentTag}` });
+      const input = content.createEl("input", { type: "text", value: currentTag });
+      input.style.width = "100%";
+      input.style.marginBottom = "12px";
+      input.select();
+      const buttonContainer = content.createEl("div", { cls: "dialog-buttons" });
+      const okButton = buttonContainer.createEl("button", { text: "Rename", cls: "mod-cta" });
+      okButton.onclick = () => {
+        resolve(input.value);
+        modal.close();
+      };
+      const cancelButton = buttonContainer.createEl("button", { text: "Cancel" });
+      cancelButton.onclick = () => {
+        resolve("");
+        modal.close();
+      };
+      input.onkeydown = (e) => {
+        if (e.key === "Enter") {
+          resolve(input.value);
+          modal.close();
+        }
+        if (e.key === "Escape") {
+          resolve("");
+          modal.close();
+        }
+      };
+      modal.open();
+    });
+  }
+  async runTagAuditFromModal() {
+    if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+      new import_obsidian12.Notice("Please connect to an AI agent first");
+      return;
+    }
+    try {
+      new import_obsidian12.Notice("\u{1F50D} Running tag audit...");
+      const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+      const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+      const { TagAuditor: TagAuditor2 } = await Promise.resolve().then(() => (init_tag_auditor(), tag_auditor_exports));
+      const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+      const tagManager = new TagManager2(vaultAdapter);
+      const tagAuditor = new TagAuditor2(this.claudeConnection, tagManager, vaultAdapter, this.settingsProvider);
+      const report = await tagAuditor.auditAllTags();
+      const modal = new import_obsidian12.Modal(this.app);
+      modal.setTitle("Tag Audit Report");
+      modal.contentEl.addClass("tag-manager-modal");
+      const container = modal.contentEl.createEl("div", { cls: "tag-manager-container" });
+      const scoreContainer = container.createEl("div", { cls: "tag-audit-score" });
+      const scoreClass = report.healthScore >= 80 ? "good" : report.healthScore >= 50 ? "medium" : "bad";
+      scoreContainer.createEl("div", { text: `${report.healthScore}`, cls: `tag-audit-score-value ${scoreClass}` });
+      scoreContainer.createEl("div", { text: "Health Score", cls: "tag-audit-score-label" });
+      const issues = report.issues;
+      const sections = [
+        { title: "Flat Tags", items: issues.flatTags.map((t) => `${t.tag} (${t.count}x)`), icon: "layers" },
+        { title: "Similar Tag Groups", items: issues.similarTags.map((g) => g.group.join(" \u2248 ")), icon: "copy" },
+        { title: "Duplicate Tags", items: issues.duplicateTags.map((d) => d.tags.join(" = ")), icon: "git-merge" },
+        { title: "Rarely Used Tags", items: issues.rarelyUsedTags.map((t) => `${t.tag} (${t.count}x)`), icon: "trash" },
+        { title: "Overused Tags", items: issues.overusedTags.map((t) => `${t.tag} (${t.count}x)`), icon: "alert-triangle" }
+      ];
+      for (const section of sections) {
+        if (section.items.length === 0)
+          continue;
+        const sectionEl = container.createEl("div", { cls: "tag-audit-section" });
+        const sectionHeader = sectionEl.createEl("div", { cls: "tag-audit-section-header" });
+        (0, import_obsidian12.setIcon)(sectionHeader.createEl("span"), section.icon);
+        sectionHeader.createEl("span", { text: `${section.title} (${section.items.length})` });
+        const list = sectionEl.createEl("div", { cls: "tag-audit-list" });
+        for (const item of section.items.slice(0, 20)) {
+          list.createEl("div", { text: item, cls: "tag-audit-item" });
+        }
+        if (section.items.length > 20) {
+          list.createEl("div", { text: `... and ${section.items.length - 20} more`, cls: "tag-audit-item tag-audit-more" });
+        }
+      }
+      if (report.optimizationSuggestions.length > 0) {
+        const suggestionsEl = container.createEl("div", { cls: "tag-audit-section" });
+        suggestionsEl.createEl("h4", { text: "Suggestions" });
+        for (const s of report.optimizationSuggestions) {
+          const item = suggestionsEl.createEl("div", { cls: "tag-audit-suggestion" });
+          item.createEl("span", { text: s.description });
+          const tags = item.createEl("div", { cls: "tag-audit-suggestion-meta" });
+          tags.createEl("span", { text: `Impact: ${s.impact}`, cls: `tag-impact-${s.impact}` });
+          tags.createEl("span", { text: `Effort: ${s.effort}`, cls: `tag-effort-${s.effort}` });
+        }
+      }
+      modal.open();
+    } catch (error) {
+      new import_obsidian12.Notice(`\u274C Audit failed: ${error.message}`);
+    }
+  }
+  async runAutoFixFromModal() {
+    if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+      new import_obsidian12.Notice("Please connect to an AI agent first");
+      return;
+    }
+    try {
+      const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+      const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+      const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+      const tagManager = new TagManager2(vaultAdapter);
+      await tagManager.learnFromExistingTags();
+      const allTags = tagManager.getAllTags();
+      const flatTags = Array.from(allTags.keys()).filter((t) => !t.includes("/"));
+      if (flatTags.length === 0) {
+        new import_obsidian12.Notice("No flat tags to fix!");
+        return;
+      }
+      const message = `Found ${flatTags.length} flat tags that can be converted to hierarchical format:
+
+${flatTags.slice(0, 10).map((t) => `\u2022 ${t}`).join("\n")}${flatTags.length > 10 ? `
+... and ${flatTags.length - 10} more` : ""}
+
+Convert these tags?`;
+      const shouldProceed = await this.showTagConfirmDialog("Auto-Fix Flat Tags", message);
+      if (!shouldProceed)
+        return;
+      new import_obsidian12.Notice("\u{1F504} Converting tags...");
+      const { TagAuditor: TagAuditor2 } = await Promise.resolve().then(() => (init_tag_auditor(), tag_auditor_exports));
+      const { TagMigrator: TagMigrator2 } = await Promise.resolve().then(() => (init_tag_migrator(), tag_migrator_exports));
+      const tagAuditor = new TagAuditor2(this.claudeConnection, tagManager, vaultAdapter, this.settingsProvider);
+      const migrator = new TagMigrator2(tagManager, tagAuditor, vaultAdapter);
+      const result = await migrator.migrate();
+      if (result.success) {
+        new import_obsidian12.Notice(`\u2705 Converted ${result.stats.convertedToHierarchical} tags in ${result.updatedFiles} files`);
+      } else {
+        new import_obsidian12.Notice(`\u274C Migration had ${result.errors.length} errors`);
+      }
+    } catch (error) {
+      new import_obsidian12.Notice(`\u274C Auto-fix failed: ${error.message}`);
+    }
+  }
+  showTagConfirmDialog(title, message) {
+    return new Promise((resolve) => {
+      const modal = new import_obsidian12.Modal(this.app);
+      modal.setTitle(title);
+      const content = modal.contentEl.createEl("div");
+      content.style.whiteSpace = "pre-wrap";
+      content.style.maxHeight = "400px";
+      content.style.overflowY = "auto";
+      content.createEl("p", { text: message });
+      const buttonContainer = content.createEl("div", { cls: "dialog-buttons" });
+      const okButton = buttonContainer.createEl("button", { text: "Yes", cls: "mod-cta" });
+      okButton.onclick = () => {
+        resolve(true);
+        modal.close();
+      };
+      const cancelButton = buttonContainer.createEl("button", { text: "No" });
+      cancelButton.onclick = () => {
+        resolve(false);
+        modal.close();
+      };
+      modal.open();
+    });
+  }
 };
-var RawFileSuggestModal = class extends import_obsidian11.FuzzySuggestModal {
+var RawFileSuggestModal = class extends import_obsidian12.FuzzySuggestModal {
   constructor(app, files, onChoose) {
     super(app);
     this.files = files;
@@ -9497,7 +10976,7 @@ var RawFileSuggestModal = class extends import_obsidian11.FuzzySuggestModal {
     this.onChoose(item);
   }
 };
-var FileSuggestModal = class extends import_obsidian11.FuzzySuggestModal {
+var FileSuggestModal = class extends import_obsidian12.FuzzySuggestModal {
   constructor(app, onChoose) {
     super(app);
     this.onChoose = onChoose;
@@ -9533,11 +11012,31 @@ var DEFAULT_SETTINGS = {
   },
   contextTokenBudget: 1200,
   todoTarget: "inbox",
-  terminalPolicy: "prompt"
+  terminalPolicy: "prompt",
+  tagMergePrompt: `\u4F60\u662F\u4E00\u4E2A\u6807\u7B7E\u4F53\u7CFB\u6574\u7406\u4E13\u5BB6\u3002\u8BF7\u5206\u6790\u4EE5\u4E0B\u6807\u7B7E\u5217\u8868\uFF0C\u627E\u51FA\u8BED\u4E49\u76F8\u540C\u6216\u9AD8\u5EA6\u76F8\u4F3C\u7684\u6807\u7B7E\u7EC4\uFF0C\u7ED9\u51FA\u5408\u5E76\u5EFA\u8BAE\u3002
+
+\u89C4\u5219\uFF1A
+- \u53EA\u5EFA\u8BAE\u771F\u6B63\u8BED\u4E49\u76F8\u540C/\u76F8\u4F3C\u7684\u6807\u7B7E\u5408\u5E76\uFF0C\u4E0D\u8981\u56E0\u4E3A\u5B57\u7B26\u4E32\u90E8\u5206\u91CD\u53E0\u5C31\u5EFA\u8BAE\u5408\u5E76
+- \u5EFA\u8BAE\u5408\u5E76\u65F6\uFF0C\u4F18\u5148\u4FDD\u7559\u4F7F\u7528\u6B21\u6570\u591A\u7684\u6807\u7B7E
+- \u8003\u8651\u5C42\u7EA7\u5173\u7CFB\uFF1A\u5982\u679C\u6241\u5E73\u6807\u7B7E\u662F\u67D0\u4E2A\u5C42\u7EA7\u6807\u7B7E\u7684\u53F6\u5B50\uFF0C\u5EFA\u8BAE\u8F6C\u4E3A\u5C42\u7EA7\u683C\u5F0F\u800C\u975E\u5408\u5E76
+- \u6BCF\u7EC4\u5408\u5E76\u5EFA\u8BAE\u9700\u8981\u7ED9\u51FA\u7406\u7531
+
+\u8FD4\u56DE JSON \u6570\u7EC4\uFF0C\u6BCF\u4E2A\u5143\u7D20\u683C\u5F0F\uFF1A
+{
+  "from": ["\u8981\u88AB\u5408\u5E76\u7684\u6807\u7B7E\u5217\u8868"],
+  "to": "\u5408\u5E76\u540E\u7684\u76EE\u6807\u6807\u7B7E",
+  "reason": "\u5408\u5E76\u7406\u7531",
+  "confidence": "high/medium/low"
+}
+
+\u5982\u679C\u6CA1\u6709\u9700\u8981\u5408\u5E76\u7684\u6807\u7B7E\uFF0C\u8FD4\u56DE\u7A7A\u6570\u7EC4 []
+
+\u6807\u7B7E\u5217\u8868\uFF1A
+{{TAG_LIST}}`
 };
 
 // main.ts
-var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
+var ClaudeACPPlugin = class extends import_obsidian13.Plugin {
   constructor() {
     super(...arguments);
     this.claudeConnection = null;
@@ -9602,7 +11101,7 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
   }
   async initializeACPClient() {
     if (this.settings.agentProvider === "claude" && !this.settings.anthropicApiKey && !this.settings.claudeCodePath || this.settings.agentProvider === "gemini" && !this.settings.geminiApiKey && !this.settings.geminiAgentPath) {
-      new import_obsidian12.Notice(
+      new import_obsidian13.Notice(
         `Please set either API key or agent path in settings for ${this.getProviderLabel()}`
       );
       this.updateViewConnections();
@@ -9612,16 +11111,16 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
       this.claudeConnection = this.createConnection();
       const connected = await this.claudeConnection.connect();
       if (connected) {
-        new import_obsidian12.Notice(`Successfully connected to ${this.getProviderLabel()}`);
+        new import_obsidian13.Notice(`Successfully connected to ${this.getProviderLabel()}`);
       } else {
-        new import_obsidian12.Notice(
+        new import_obsidian13.Notice(
           `Failed to connect to ${this.getProviderLabel()}. Please check your settings.`
         );
       }
       this.updateViewConnections();
     } catch (error) {
       console.error("LLM Wiki: Initialization error:", error);
-      new import_obsidian12.Notice("Failed to initialize claude-code-acp: " + error.message);
+      new import_obsidian13.Notice("Failed to initialize claude-code-acp: " + error.message);
       this.updateViewConnections();
     }
   }
@@ -9699,7 +11198,7 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
   async editFileWithAI(file) {
     var _a;
     try {
-      new import_obsidian12.Notice(`AI editing: ${file.basename}`);
+      new import_obsidian13.Notice(`AI editing: ${file.basename}`);
       const content = await this.app.vault.read(file);
       const instruction = await this.showEditDialog(file.basename);
       if (instruction) {
@@ -9707,7 +11206,7 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
           file.path,
           instruction
         );
-        new import_obsidian12.Notice("Edit completed successfully");
+        new import_obsidian13.Notice("Edit completed successfully");
         const chatView = (_a = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)[0]) == null ? void 0 : _a.view;
         if (chatView) {
           chatView.setConnectionStatus(true);
@@ -9715,18 +11214,18 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
         }
       }
     } catch (error) {
-      new import_obsidian12.Notice("Failed to edit file: " + error.message);
+      new import_obsidian13.Notice("Failed to edit file: " + error.message);
     }
   }
   async showEditDialog(fileName) {
     return new Promise((resolve) => {
-      const modal = new this.app.Modal();
+      const modal = new import_obsidian13.Modal(this.app);
       modal.setTitle(`AI Edit: ${fileName}`);
       const content = modal.contentEl.createEl("div", { cls: "edit-dialog" });
       content.createEl("p", {
         text: "What would you like Claude to do with this file?"
       });
-      const instructionArea = new this.app.TextAreaComponent(content);
+      const instructionArea = new import_obsidian13.TextAreaComponent(content);
       instructionArea.inputEl.placeholder = 'e.g., "Improve the structure and fix typos"...';
       instructionArea.inputEl.rows = 4;
       const buttonContainer = content.createEl("div", {
@@ -9750,6 +11249,56 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
       modal.open();
     });
   }
+  /**
+   * Show confirm dialog
+   */
+  async showConfirmDialog(title, message) {
+    return new Promise((resolve) => {
+      const modal = new import_obsidian13.Modal(this.app);
+      modal.setTitle(title);
+      const content = modal.contentEl.createEl("div");
+      content.createEl("p", { text: message });
+      const buttonContainer = content.createEl("div", {
+        cls: "dialog-buttons"
+      });
+      const okButton = buttonContainer.createEl("button", {
+        text: "Yes",
+        cls: "mod-cta"
+      });
+      okButton.onclick = () => {
+        resolve(true);
+        modal.close();
+      };
+      const cancelButton = buttonContainer.createEl("button", {
+        text: "No"
+      });
+      cancelButton.onclick = () => {
+        resolve(false);
+        modal.close();
+      };
+      modal.open();
+    });
+  }
+  /**
+   * Show message modal
+   */
+  showMessageModal(title, message) {
+    const modal = new import_obsidian13.Modal(this.app);
+    modal.setTitle(title);
+    const content = modal.contentEl.createEl("div");
+    content.style.whiteSpace = "pre-wrap";
+    content.style.fontFamily = "monospace";
+    content.style.fontSize = "14px";
+    content.style.lineHeight = "1.6";
+    content.textContent = message;
+    const closeButton = content.createEl("button", {
+      text: "Close",
+      cls: "mod-cta",
+      attr: { style: "margin-top: 20px;" }
+    });
+    closeButton.onclick = () => modal.close();
+    modal.open();
+  }
   setupFileMonitoring() {
     this.app.workspace.onLayoutReady(() => {
       this.fileMonitorReady = true;
@@ -9762,6 +11311,93 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
     this.registerEvent(
       this.app.vault.on("create", (file) => {
         this.notifyFileChange(file, "created");
+      })
+    );
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (file instanceof import_obsidian13.TFile && file.extension === "md") {
+          menu.addItem((item) => {
+            item.setTitle("\u{1F3F7}\uFE0F Generate Tags").setIcon("tag").onClick(async () => {
+              if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+                new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
+                return;
+              }
+              try {
+                new import_obsidian13.Notice("\u{1F504} Generating tags...");
+                const content = await this.app.vault.read(file);
+                const tags = await this.claudeConnection.analyzeTags(file.path, content);
+                if (tags.length === 0) {
+                  new import_obsidian13.Notice("No tags generated");
+                  return;
+                }
+                const message = `Generated tags:
+${tags.map((tag) => `\u2022 ${tag}`).join("\n")}
+
+Apply these tags?`;
+                const shouldApply = await this.showConfirmDialog("Apply Tags?", message);
+                if (shouldApply) {
+                  const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+                  const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+                  await vaultAdapter.updateFileTags(file.path, tags);
+                  new import_obsidian13.Notice(`\u2705 ${tags.length} tags applied`);
+                }
+              } catch (error) {
+                new import_obsidian13.Notice(`\u274C Tag generation failed: ${error.message}`);
+              }
+            });
+          });
+          menu.addItem((item) => {
+            item.setTitle("\u{1F50D} Audit Tags").setIcon("search").onClick(async () => {
+              if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+                new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
+                return;
+              }
+              try {
+                new import_obsidian13.Notice("\u{1F50D} Auditing tags...");
+                const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+                const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+                const { TagAuditor: TagAuditor2 } = await Promise.resolve().then(() => (init_tag_auditor(), tag_auditor_exports));
+                const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+                const tagManager = new TagManager2(vaultAdapter);
+                const tagAuditor = new TagAuditor2(this.claudeConnection, tagManager, vaultAdapter, () => this.settings);
+                const content = await vaultAdapter.readFile(file.path);
+                const currentTags = await vaultAdapter.getFileTags(file.path);
+                const auditResult = await tagAuditor.auditFileTags(file.path, content, currentTags);
+                let message = `\u{1F4CA} Tag Audit Result:
+Score: ${auditResult.overallScore}/100
+
+`;
+                if (auditResult.issues.length > 0) {
+                  message += `Issues (${auditResult.issues.length}):
+`;
+                  auditResult.issues.forEach((issue) => {
+                    const emoji = issue.type === "error" ? "\u274C" : issue.type === "warning" ? "\u26A0\uFE0F" : "\u{1F4A1}";
+                    message += `${emoji} ${issue.tag ? `${issue.tag}: ` : ""}${issue.message}
+`;
+                    if (issue.fix)
+                      message += `   \u2192 ${issue.fix}
+`;
+                  });
+                  const shouldOptimize = await this.showConfirmDialog(
+                    "Optimize Tags?",
+                    `${auditResult.issues.length} issues found. Auto-optimize?`
+                  );
+                  if (shouldOptimize) {
+                    const optimizationResult = await tagAuditor.autoOptimizeTags(currentTags, auditResult);
+                    await vaultAdapter.updateFileTags(file.path, optimizationResult.optimizedTags);
+                    new import_obsidian13.Notice(`\u2705 Tags optimized! ${optimizationResult.changes.length} changes`);
+                  }
+                } else {
+                  message += "\u2705 Tags look perfect!";
+                  new import_obsidian13.Notice("\u2705 Tags look great!");
+                }
+                this.showMessageModal("Tag Audit Result", message);
+              } catch (error) {
+                new import_obsidian13.Notice(`\u274C Tag audit failed: ${error.message}`);
+              }
+            });
+          });
+        }
       })
     );
     this.registerEvent(
@@ -9784,14 +11420,14 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
   }
   async testConnection() {
     var _a;
-    new import_obsidian12.Notice(`Testing ${this.getProviderLabel()} connection...`);
+    new import_obsidian13.Notice(`Testing ${this.getProviderLabel()} connection...`);
     try {
       if (!this.claudeConnection) {
         this.claudeConnection = this.createConnection();
       }
       const connected = await this.claudeConnection.connect();
       if (connected) {
-        new import_obsidian12.Notice(
+        new import_obsidian13.Notice(
           `\u2705 Connection successful! ${this.getProviderLabel()} is ready.`
         );
         const chatView = (_a = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)[0]) == null ? void 0 : _a.view;
@@ -9799,23 +11435,23 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
           chatView.setConnectionStatus(true);
         }
       } else {
-        new import_obsidian12.Notice("\u274C Connection failed. Please check your settings:");
+        new import_obsidian13.Notice("\u274C Connection failed. Please check your settings:");
         if (this.settings.agentProvider === "cursor") {
-          new import_obsidian12.Notice("\u2022 Cursor Agent executable path");
-          new import_obsidian12.Notice("\u2022 Cursor CLI login (cursor-agent login)");
+          new import_obsidian13.Notice("\u2022 Cursor Agent executable path");
+          new import_obsidian13.Notice("\u2022 Cursor CLI login (cursor-agent login)");
         } else if (this.settings.agentProvider === "gemini") {
-          new import_obsidian12.Notice("\u2022 Gemini Agent executable path");
-          new import_obsidian12.Notice("\u2022 API key (if required)");
+          new import_obsidian13.Notice("\u2022 Gemini Agent executable path");
+          new import_obsidian13.Notice("\u2022 API key (if required)");
         } else {
-          new import_obsidian12.Notice("\u2022 Claude Code executable path");
-          new import_obsidian12.Notice("\u2022 API key (if required)");
+          new import_obsidian13.Notice("\u2022 Claude Code executable path");
+          new import_obsidian13.Notice("\u2022 API key (if required)");
         }
-        new import_obsidian12.Notice("\u2022 Network connection");
-        new import_obsidian12.Notice("\u2022 Permissions");
+        new import_obsidian13.Notice("\u2022 Network connection");
+        new import_obsidian13.Notice("\u2022 Permissions");
       }
     } catch (error) {
       console.error("Connection test error:", error);
-      new import_obsidian12.Notice(`\u274C Connection test failed: ${error.message}`);
+      new import_obsidian13.Notice(`\u274C Connection test failed: ${error.message}`);
     }
   }
   setupDefaultHotkeys() {
@@ -9840,14 +11476,14 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
       name: "AI Edit Current File",
       editorCallback: (editor, view) => {
         if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
-          new import_obsidian12.Notice(`Please connect to ${this.getProviderLabel()} first`);
+          new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
           return;
         }
         const file = view.file;
         if (file) {
           this.editFileWithAI(file);
         } else {
-          new import_obsidian12.Notice("No file currently active");
+          new import_obsidian13.Notice("No file currently active");
         }
       }
     });
@@ -9856,7 +11492,7 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
       name: "Quick Chat About Current Note",
       editorCallback: (editor, view) => {
         if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
-          new import_obsidian12.Notice(`Please connect to ${this.getProviderLabel()} first`);
+          new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
           return;
         }
         this.activateView(CHAT_VIEW_TYPE);
@@ -9877,7 +11513,7 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
             }
           }, 100);
         } else {
-          new import_obsidian12.Notice("No file currently active");
+          new import_obsidian13.Notice("No file currently active");
         }
       }
     });
@@ -9887,12 +11523,12 @@ var ClaudeACPPlugin = class extends import_obsidian12.Plugin {
       editorCallback: (editor, view) => {
         var _a, _b;
         if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
-          new import_obsidian12.Notice(`Please connect to ${this.getProviderLabel()} first`);
+          new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
           return;
         }
         const selection = editor.getSelection();
         if (!selection.trim()) {
-          new import_obsidian12.Notice("No selection to send");
+          new import_obsidian13.Notice("No selection to send");
           return;
         }
         const file = view.file;
@@ -9916,9 +11552,210 @@ ${selection}
         }, 100);
       }
     });
+    this.addCommand({
+      id: "audit-current-file-tags",
+      name: "Audit Current File Tags",
+      editorCallback: async (editor, view) => {
+        if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+          new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
+          return;
+        }
+        const file = view.file;
+        if (!file) {
+          new import_obsidian13.Notice("No file currently active");
+          return;
+        }
+        try {
+          new import_obsidian13.Notice("\u{1F50D} Auditing tags...");
+          const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+          const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+          const { TagAuditor: TagAuditor2 } = await Promise.resolve().then(() => (init_tag_auditor(), tag_auditor_exports));
+          const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+          const tagManager = new TagManager2(vaultAdapter);
+          const tagAuditor = new TagAuditor2(this.claudeConnection, tagManager, vaultAdapter, () => this.settings);
+          const content = await vaultAdapter.readFile(file.path);
+          const currentTags = await vaultAdapter.getFileTags(file.path);
+          const auditResult = await tagAuditor.auditFileTags(file.path, content, currentTags);
+          let message = `\u{1F4CA} Tag Audit Result for "${file.basename}":
+`;
+          message += `Score: ${auditResult.overallScore}/100
+`;
+          if (auditResult.issues.length > 0) {
+            message += `
+Issues found (${auditResult.issues.length}):
+`;
+            auditResult.issues.forEach((issue) => {
+              const emoji = issue.type === "error" ? "\u274C" : issue.type === "warning" ? "\u26A0\uFE0F" : "\u{1F4A1}";
+              message += `${emoji} ${issue.tag ? `${issue.tag}: ` : ""}${issue.message}
+`;
+              if (issue.fix) {
+                message += `   \u2192 Fix: ${issue.fix}
+`;
+              }
+            });
+          }
+          if (auditResult.suggestions.length > 0) {
+            message += `
+Suggestions:
+`;
+            auditResult.suggestions.forEach((suggestion) => {
+              message += `\u2022 ${suggestion}
+`;
+            });
+          }
+          if (auditResult.issues.length > 0) {
+            const shouldOptimize = await this.showConfirmDialog(
+              "Optimize Tags?",
+              `${auditResult.issues.length} issues found. Would you like to auto-optimize these tags?`
+            );
+            if (shouldOptimize) {
+              const optimizationResult = await tagAuditor.autoOptimizeTags(currentTags, auditResult);
+              await vaultAdapter.updateFileTags(file.path, optimizationResult.optimizedTags);
+              new import_obsidian13.Notice(`\u2705 Tags optimized! ${optimizationResult.changes.length} changes applied`);
+            }
+          } else {
+            new import_obsidian13.Notice("\u2705 Tags look great!");
+          }
+          this.showMessageModal("Tag Audit Result", message);
+        } catch (error) {
+          console.error("Tag audit failed:", error);
+          new import_obsidian13.Notice(`\u274C Tag audit failed: ${error.message}`);
+        }
+      }
+    });
+    this.addCommand({
+      id: "audit-all-wiki-tags",
+      name: "Audit All Wiki Tags",
+      callback: async () => {
+        if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+          new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
+          return;
+        }
+        try {
+          new import_obsidian13.Notice("\u{1F50D} Auditing all wiki tags...");
+          const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+          const { TagManager: TagManager2 } = await Promise.resolve().then(() => (init_tag_manager(), tag_manager_exports));
+          const { TagAuditor: TagAuditor2 } = await Promise.resolve().then(() => (init_tag_auditor(), tag_auditor_exports));
+          const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+          const tagManager = new TagManager2(vaultAdapter);
+          const tagAuditor = new TagAuditor2(this.claudeConnection, tagManager, vaultAdapter, () => this.settings);
+          await tagManager.learnFromExistingTags();
+          const auditReport = await tagAuditor.auditAllTags();
+          let message = `\u{1F4CA} Global Tag Audit Report:
+`;
+          message += `Health Score: ${auditReport.healthScore}/100
+`;
+          message += `Total files: ${auditReport.totalFiles}
+`;
+          message += `Total tags: ${auditReport.totalTags}
+`;
+          message += `Unique tags: ${auditReport.uniqueTags}
+
+`;
+          const issues = auditReport.issues;
+          const totalIssues = issues.duplicateTags.length + issues.similarTags.length + issues.flatTags.length + issues.rarelyUsedTags.length + issues.overusedTags.length;
+          if (totalIssues > 0) {
+            message += `\u26A0\uFE0F Issues found:
+`;
+            if (issues.duplicateTags.length > 0)
+              message += `- Duplicate tags: ${issues.duplicateTags.length}
+`;
+            if (issues.similarTags.length > 0)
+              message += `- Similar tag groups: ${issues.similarTags.length}
+`;
+            if (issues.flatTags.length > 0)
+              message += `- Flat tags (non-hierarchical): ${issues.flatTags.length}
+`;
+            if (issues.rarelyUsedTags.length > 0)
+              message += `- Rarely used tags: ${issues.rarelyUsedTags.length}
+`;
+            if (issues.overusedTags.length > 0)
+              message += `- Overused tags: ${issues.overusedTags.length}
+`;
+            message += `
+Optimization suggestions:
+`;
+            auditReport.optimizationSuggestions.forEach((suggestion) => {
+              const impact = suggestion.impact === "high" ? "\u{1F534} High impact" : suggestion.impact === "medium" ? "\u{1F7E1} Medium impact" : "\u{1F7E2} Low impact";
+              const effort = suggestion.effort === "high" ? "\u26A1 High effort" : suggestion.effort === "medium" ? "\u26A1 Medium effort" : "\u26A1 Low effort";
+              message += `\u2022 ${suggestion.description} (${impact}, ${effort})
+`;
+            });
+            if (issues.flatTags.length > 0) {
+              const shouldMigrate = await this.showConfirmDialog(
+                "Migrate Flat Tags?",
+                `Found ${issues.flatTags.length} flat tags. Would you like to convert them to hierarchical format?`
+              );
+              if (shouldMigrate) {
+                const { TagMigrator: TagMigrator2 } = await Promise.resolve().then(() => (init_tag_migrator(), tag_migrator_exports));
+                const migrator = new TagMigrator2(tagManager, tagAuditor, vaultAdapter);
+                const preview = await migrator.generatePreviewReport();
+                const proceed = await this.showConfirmDialog(
+                  "Confirm Migration",
+                  `Migration will update ${preview.stats.convertedToHierarchical} tags in ${preview.updatedFiles} files. Proceed?`
+                );
+                if (proceed) {
+                  const result = await migrator.migrate();
+                  if (result.success) {
+                    new import_obsidian13.Notice(`\u2705 Migration completed! ${result.updatedFiles} files updated`);
+                  } else {
+                    new import_obsidian13.Notice(`\u274C Migration failed with ${result.errors.length} errors`);
+                  }
+                }
+              }
+            }
+          } else {
+            message += "\u2705 All tags look great!";
+            new import_obsidian13.Notice("\u2705 Tag audit completed, no issues found!");
+          }
+          this.showMessageModal("Global Tag Audit Report", message);
+        } catch (error) {
+          console.error("Global tag audit failed:", error);
+          new import_obsidian13.Notice(`\u274C Global tag audit failed: ${error.message}`);
+        }
+      }
+    });
+    this.addCommand({
+      id: "generate-tags-for-current-file",
+      name: "Generate Tags for Current File",
+      editorCallback: async (editor, view) => {
+        if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+          new import_obsidian13.Notice(`Please connect to ${this.getProviderLabel()} first`);
+          return;
+        }
+        const file = view.file;
+        if (!file) {
+          new import_obsidian13.Notice("No file currently active");
+          return;
+        }
+        try {
+          new import_obsidian13.Notice("\u{1F504} Generating tags...");
+          const content = await this.app.vault.read(file);
+          const tags = await this.claudeConnection.analyzeTags(file.path, content);
+          if (tags.length === 0) {
+            new import_obsidian13.Notice("No tags generated");
+            return;
+          }
+          const message = `Generated tags:
+${tags.map((tag) => `\u2022 ${tag}`).join("\n")}
+
+Would you like to apply these tags?`;
+          const shouldApply = await this.showConfirmDialog("Apply Generated Tags?", message);
+          if (shouldApply) {
+            const { VaultFileSystemAdapter: VaultFileSystemAdapter2 } = await Promise.resolve().then(() => (init_vault_adapter(), vault_adapter_exports));
+            const vaultAdapter = new VaultFileSystemAdapter2(this.app);
+            await vaultAdapter.updateFileTags(file.path, tags);
+            new import_obsidian13.Notice(`\u2705 ${tags.length} tags applied successfully`);
+          }
+        } catch (error) {
+          console.error("Tag generation failed:", error);
+          new import_obsidian13.Notice(`\u274C Tag generation failed: ${error.message}`);
+        }
+      }
+    });
   }
 };
-var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
+var ClaudeACPSettingTab = class extends import_obsidian13.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -9927,7 +11764,7 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: "LLM Wiki Settings" });
-    new import_obsidian12.Setting(containerEl).setName("Agent provider").setDesc("Select which ACP adapter to use").addDropdown((dropdown) => {
+    new import_obsidian13.Setting(containerEl).setName("Agent provider").setDesc("Select which ACP adapter to use").addDropdown((dropdown) => {
       dropdown.addOption("claude", "Claude Code (claude-code-acp)").addOption("cursor", "Cursor CLI ACP (agent acp)").addOption("gemini", "Gemini Agent (gemini acp)").setValue(this.plugin.settings.agentProvider).onChange(async (value) => {
         await this.plugin.setAgentProvider(value);
         this.display();
@@ -9935,13 +11772,13 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
     });
     if (this.plugin.settings.agentProvider === "gemini") {
       containerEl.createEl("h3", { text: "Gemini Agent Configuration" });
-      new import_obsidian12.Setting(containerEl).setName("Gemini API Key").setDesc("Your Gemini API key (optional if using local agent)").addText(
+      new import_obsidian13.Setting(containerEl).setName("Gemini API Key").setDesc("Your Gemini API key (optional if using local agent)").addText(
         (text) => text.setPlaceholder("AIza...").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
           this.plugin.settings.geminiApiKey = value;
           await this.plugin.saveSettings();
         })
       );
-      new import_obsidian12.Setting(containerEl).setName("Gemini Agent Path").setDesc('Path to gemini agent (e.g., "gemini --acp" if in PATH)').addText(
+      new import_obsidian13.Setting(containerEl).setName("Gemini Agent Path").setDesc('Path to gemini agent (e.g., "gemini --acp" if in PATH)').addText(
         (text) => text.setPlaceholder("gemini --acp").setValue(this.plugin.settings.geminiAgentPath).onChange(async (value) => {
           this.plugin.settings.geminiAgentPath = value;
           await this.plugin.saveSettings();
@@ -9949,7 +11786,7 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
       );
     } else if (this.plugin.settings.agentProvider === "claude") {
       containerEl.createEl("h3", { text: "Claude Code Configuration" });
-      new import_obsidian12.Setting(containerEl).setName("Anthropic API Key").setDesc(
+      new import_obsidian13.Setting(containerEl).setName("Anthropic API Key").setDesc(
         "Your Anthropic API key (optional if using local claude-code-acp)"
       ).addText(
         (text) => text.setPlaceholder("sk-ant-...").setValue(this.plugin.settings.anthropicApiKey).onChange(async (value) => {
@@ -9957,7 +11794,7 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
           await this.plugin.saveSettings();
         })
       );
-      new import_obsidian12.Setting(containerEl).setName("Claude Code Path").setDesc('Path to claude-code-acp (e.g., "claude-code-acp" if in PATH)').addText(
+      new import_obsidian13.Setting(containerEl).setName("Claude Code Path").setDesc('Path to claude-code-acp (e.g., "claude-code-acp" if in PATH)').addText(
         (text) => text.setPlaceholder("claude-code-acp").setValue(this.plugin.settings.claudeCodePath).onChange(async (value) => {
           this.plugin.settings.claudeCodePath = value;
           await this.plugin.saveSettings();
@@ -9965,7 +11802,7 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
       );
     } else {
       containerEl.createEl("h3", { text: "Cursor Agent Configuration" });
-      new import_obsidian12.Setting(containerEl).setName("Cursor Agent Path").setDesc(
+      new import_obsidian13.Setting(containerEl).setName("Cursor Agent Path").setDesc(
         'Path to Cursor CLI ACP command (e.g., "agent acp" if in PATH)'
       ).addText(
         (text) => text.setPlaceholder("agent acp").setValue(this.plugin.settings.cursorAgentPath).onChange(async (value) => {
@@ -9973,19 +11810,19 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
           await this.plugin.saveSettings();
         })
       );
-      new import_obsidian12.Setting(containerEl).setName("Cursor Config File").setDesc("Optional config file for Cursor CLI ACP (--config)").addText(
+      new import_obsidian13.Setting(containerEl).setName("Cursor Config File").setDesc("Optional config file for Cursor CLI ACP (--config)").addText(
         (text) => text.setPlaceholder("/path/to/config.json").setValue(this.plugin.settings.cursorConfigPath).onChange(async (value) => {
           this.plugin.settings.cursorConfigPath = value;
           await this.plugin.saveSettings();
         })
       );
-      new import_obsidian12.Setting(containerEl).setName("Cursor Log Level").setDesc("Optional log level for Cursor CLI ACP (--log-level)").addText(
+      new import_obsidian13.Setting(containerEl).setName("Cursor Log Level").setDesc("Optional log level for Cursor CLI ACP (--log-level)").addText(
         (text) => text.setPlaceholder("info").setValue(this.plugin.settings.cursorLogLevel).onChange(async (value) => {
           this.plugin.settings.cursorLogLevel = value;
           await this.plugin.saveSettings();
         })
       );
-      new import_obsidian12.Setting(containerEl).setName("Cursor Session Directory").setDesc(
+      new import_obsidian13.Setting(containerEl).setName("Cursor Session Directory").setDesc(
         "Optional session directory for Cursor CLI ACP (--session-dir)"
       ).addText(
         (text) => text.setPlaceholder("~/.cursor-sessions").setValue(this.plugin.settings.cursorSessionDir).onChange(async (value) => {
@@ -9993,7 +11830,7 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
           await this.plugin.saveSettings();
         })
       );
-      new import_obsidian12.Setting(containerEl).setName("Cursor Timeout (ms)").setDesc(
+      new import_obsidian13.Setting(containerEl).setName("Cursor Timeout (ms)").setDesc(
         "Override cursor-agent timeout in milliseconds (0 = use adapter default)"
       ).addText(
         (text) => text.setPlaceholder("30000").setValue(String(this.plugin.settings.cursorTimeoutMs)).onChange(async (value) => {
@@ -10002,14 +11839,14 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
           await this.plugin.saveSettings();
         })
       );
-      new import_obsidian12.Setting(containerEl).setName("Cursor Additional Args").setDesc("Extra args passed to Cursor CLI ACP (space-separated)").addText(
+      new import_obsidian13.Setting(containerEl).setName("Cursor Additional Args").setDesc("Extra args passed to Cursor CLI ACP (space-separated)").addText(
         (text) => text.setPlaceholder("--log-level debug").setValue(this.plugin.settings.cursorAdditionalArgs).onChange(async (value) => {
           this.plugin.settings.cursorAdditionalArgs = value;
           await this.plugin.saveSettings();
         })
       );
     }
-    new import_obsidian12.Setting(containerEl).setName("Wiki root path").setDesc(
+    new import_obsidian13.Setting(containerEl).setName("Wiki root path").setDesc(
       "Subdirectory within vault to use as wiki root (leave empty for vault root)"
     ).addText(
       (text) => text.setPlaceholder("").setValue(this.plugin.settings.wikiRootPath).onChange(async (value) => {
@@ -10017,7 +11854,7 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
         await this.plugin.saveSettings({ refreshConnection: false });
       })
     );
-    new import_obsidian12.Setting(containerEl).setName("Context token budget").setDesc("Maximum tokens to include from context items (approximate)").addText(
+    new import_obsidian13.Setting(containerEl).setName("Context token budget").setDesc("Maximum tokens to include from context items (approximate)").addText(
       (text) => text.setPlaceholder("1200").setValue(String(this.plugin.settings.contextTokenBudget)).onChange(async (value) => {
         const next = Number.parseInt(value, 10);
         if (!Number.isNaN(next) && next > 0) {
@@ -10026,26 +11863,37 @@ var ClaudeACPSettingTab = class extends import_obsidian12.PluginSettingTab {
         }
       })
     );
-    new import_obsidian12.Setting(containerEl).setName("TODO sync target").setDesc("Where to sync agent TODO items").addDropdown((dropdown) => {
+    new import_obsidian13.Setting(containerEl).setName("TODO sync target").setDesc("Where to sync agent TODO items").addDropdown((dropdown) => {
       dropdown.addOption("inbox", "Agent Inbox.md").addOption("current", "Current note").setValue(this.plugin.settings.todoTarget).onChange(async (value) => {
         this.plugin.settings.todoTarget = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian12.Setting(containerEl).setName("Terminal permission policy").setDesc("How to approve terminal commands requested by the agent").addDropdown((dropdown) => {
+    new import_obsidian13.Setting(containerEl).setName("Terminal permission policy").setDesc("How to approve terminal commands requested by the agent").addDropdown((dropdown) => {
       dropdown.addOption("prompt", "Always prompt").addOption("allow-safe", "Auto-allow safe commands").addOption("allow-tests", "Auto-allow safe + test/build commands").addOption("allow-all", "Auto-allow all commands").setValue(this.plugin.settings.terminalPolicy).onChange(async (value) => {
         this.plugin.settings.terminalPolicy = value;
         await this.plugin.saveSettings();
       });
     });
+    containerEl.createEl("h3", { text: "Tag Merge" });
+    new import_obsidian13.Setting(containerEl).setName("Tag merge analysis prompt").setDesc("Custom prompt for AI-powered tag merge analysis. Use {{TAG_LIST}} as placeholder for the tag list.").addTextArea((text) => {
+      text.setPlaceholder("Enter your custom prompt...").setValue(this.plugin.settings.tagMergePrompt).onChange(async (value) => {
+        this.plugin.settings.tagMergePrompt = value;
+        await this.plugin.saveSettings();
+      });
+      text.inputEl.rows = 12;
+      text.inputEl.style.width = "100%";
+      text.inputEl.style.fontFamily = "monospace";
+      text.inputEl.style.fontSize = "12px";
+    });
     containerEl.createEl("h3", { text: "Enabled Features" });
-    new import_obsidian12.Setting(containerEl).setName("File Editing").setDesc("Enable AI-powered file editing").addToggle(
+    new import_obsidian13.Setting(containerEl).setName("File Editing").setDesc("Enable AI-powered file editing").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.enabledFeatures.fileEditing).onChange(async (value) => {
         this.plugin.settings.enabledFeatures.fileEditing = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian12.Setting(containerEl).setName("Connection Test").setDesc("Test your ACP agent connection").addButton((button) => {
+    new import_obsidian13.Setting(containerEl).setName("Connection Test").setDesc("Test your ACP agent connection").addButton((button) => {
       button.setButtonText("Test Connection").setCta().onClick(() => this.plugin.testConnection());
     });
   }

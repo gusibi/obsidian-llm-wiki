@@ -774,6 +774,18 @@ export class ClaudeCodeConnection {
     });
 
     try {
+      // 引入标签管理器获取现有标签作为示例
+      const { TagManager } = await import("./utils/tag-manager");
+      const { VaultFileSystemAdapter } = await import("./vault-adapter");
+      const vaultAdapter = new VaultFileSystemAdapter(this.app);
+      const tagManager = new TagManager(vaultAdapter);
+
+      // 获取现有标签示例（最多20个）
+      const allTags = Array.from(tagManager.getAllTags().keys()).slice(0, 20);
+      const existingTagsExample = allTags.length > 0
+        ? `Existing tags example (please follow the hierarchical style of these tags first):\n${allTags.join("\n")}`
+        : "";
+
       const response = await this.sendMessage({
         method: "session/prompt",
         params: {
@@ -781,7 +793,18 @@ export class ClaudeCodeConnection {
           prompt: [
             {
               type: "text",
-              text: `Please suggest tags for the file at ${filePath}. Return only a JSON array of tag strings, no other text.\n\nFile content:\n${content}`,
+              text: `Please generate tags for the file at ${filePath}. Follow these rules strictly:
+1. Tags must use hierarchical format separated by slashes, e.g. "ai/machine-learning/transformer", "engineering/method/prompt-engineering"
+2. Each level uses kebab-case lowercase, only letters, numbers and hyphens are allowed, no spaces or special characters
+3. Recommended hierarchy depth is 2-4 levels, do not exceed 4 levels
+4. ${existingTagsExample}
+5. Try to use existing prefix hierarchies for new tags, avoid creating unnecessary new top-level categories
+6. Control the number of tags between 3-5, prioritize the most relevant tags that best represent the content
+7. Return only a JSON array of tag strings, no other text, explanations or markdown formatting, do not include json markers
+
+File content:
+${content.slice(0, 3000)}${content.length > 3000 ? "..." : ""}
+`,
             },
           ],
         },
@@ -793,11 +816,14 @@ export class ClaudeCodeConnection {
         throw new Error(response.error.message);
       }
 
-      const resultText = messageChunks.join("");
+      const resultText = messageChunks.join("").trim();
       try {
-        const tags = JSON.parse(resultText);
+        // 清理可能的 markdown 格式
+        const cleanedText = resultText.replace(/```json|```/g, "").trim();
+        const tags = JSON.parse(cleanedText);
         return Array.isArray(tags) ? tags : [];
-      } catch {
+      } catch (parseError) {
+        console.warn("Tag parsing failed, raw response:", resultText);
         return [];
       }
     } catch (error: any) {

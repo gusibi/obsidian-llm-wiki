@@ -10,6 +10,7 @@ import {
   TFile,
   setIcon,
   FuzzySuggestModal,
+  Modal,
 } from "obsidian";
 import {
   ACPConfigOption,
@@ -393,6 +394,16 @@ export class ChatView extends ItemView {
       "click",
       () => void this.forkCurrentSession(),
     );
+
+    const tagManagerButton = sessionControls.createEl("button", {
+      cls: "claude-session-button",
+      title: "Tag Manager",
+      attr: { "aria-label": "Tag Manager" },
+    });
+    setIcon(tagManagerButton, "tags");
+    tagManagerButton.addEventListener("click", () => {
+      void this.openTagManagerPanel();
+    });
 
     const connectionStatus = headerRight.createEl("div", {
       cls: "connection-status",
@@ -5573,6 +5584,446 @@ Scan the legacy archive at ${wikiRoot}/legacy/. For each file, read only the tit
   }
 
   /* Styles are now managed by Tailwind CSS in src/styles.css → styles.css */
+
+  private async openTagManagerPanel() {
+    const modal = new Modal(this.app);
+    modal.setTitle("Tag Manager");
+    modal.contentEl.addClass("tag-manager-modal");
+
+    const container = modal.contentEl.createEl("div", { cls: "tag-manager-container" });
+    container.style.minHeight = "400px";
+    container.style.maxHeight = "70vh";
+    container.style.overflowY = "auto";
+
+    // Loading state
+    container.createEl("div", { text: "Loading tags...", cls: "tag-manager-loading-text" });
+
+    modal.open();
+
+    try {
+      const { VaultFileSystemAdapter } = await import("./vault-adapter");
+      const { TagManager } = await import("./utils/tag-manager");
+
+      const vaultAdapter = new VaultFileSystemAdapter(this.app);
+      const tagManager = new TagManager(vaultAdapter);
+
+      await tagManager.learnFromExistingTags();
+      const stats = await tagManager.generateStats();
+      const allTags = tagManager.getAllTags();
+
+      container.empty();
+
+      // Stats bar
+      const statsBar = container.createEl("div", { cls: "tag-manager-stats" });
+      this.renderTagStat(statsBar, "Total", stats.totalTags.toString());
+      this.renderTagStat(statsBar, "Unique", stats.uniqueTags.toString());
+      this.renderTagStat(statsBar, "Hierarchical", stats.hierarchicalTagsCount.toString());
+      this.renderTagStat(statsBar, "Flat", stats.flatTagsCount.toString());
+
+      // Action buttons
+      const actions = container.createEl("div", { cls: "tag-manager-actions" });
+
+      const refreshBtn = actions.createEl("button", { cls: "tag-manager-action-btn" });
+      setIcon(refreshBtn.createEl("span", { cls: "tag-manager-action-icon" }), "refresh");
+      refreshBtn.createEl("span", { text: "Refresh" });
+      refreshBtn.onclick = async () => {
+        container.empty();
+        container.createEl("div", { text: "Loading tags...", cls: "tag-manager-loading-text" });
+        await tagManager.learnFromExistingTags();
+        const newStats = await tagManager.generateStats();
+        const newAllTags = tagManager.getAllTags();
+        this.renderTagTreeInModal(container, newAllTags, tagManager, modal);
+      };
+
+      if (this.claudeConnection && this.claudeConnection.isConnected()) {
+        const auditBtn = actions.createEl("button", { cls: "tag-manager-action-btn" });
+        setIcon(auditBtn.createEl("span", { cls: "tag-manager-action-icon" }), "search");
+        auditBtn.createEl("span", { text: "Audit All" });
+        auditBtn.onclick = async () => {
+          modal.close();
+          await this.runTagAuditFromModal();
+        };
+
+        const fixBtn = actions.createEl("button", { cls: "tag-manager-action-btn" });
+        setIcon(fixBtn.createEl("span", { cls: "tag-manager-action-icon" }), "wand-glyph");
+        fixBtn.createEl("span", { text: "Auto-Fix Flat" });
+        fixBtn.onclick = async () => {
+          modal.close();
+          await this.runAutoFixFromModal();
+        };
+      }
+
+      // Tag tree
+      const treeContainer = container.createEl("div", { cls: "tag-manager-tree" });
+      this.renderTagTreeInModal(treeContainer, allTags, tagManager, modal);
+
+    } catch (error: any) {
+      container.empty();
+      container.createEl("div", {
+        text: `Failed to load tags: ${error.message}`,
+        cls: "tag-manager-error",
+      });
+    }
+  }
+
+  private renderTagStat(parent: HTMLElement, label: string, value: string) {
+    const stat = parent.createEl("div", { cls: "tag-manager-stat" });
+    stat.createEl("span", { text: value, cls: "tag-manager-stat-value" });
+    stat.createEl("span", { text: label, cls: "tag-manager-stat-label" });
+  }
+
+  private renderTagTreeInModal(
+    container: HTMLElement,
+    allTags: Map<string, number>,
+    tagManager: any,
+    modal: Modal
+  ) {
+    interface TagNode {
+      name: string;
+      fullPath: string;
+      count: number;
+      children: Map<string, TagNode>;
+      isHierarchical: boolean;
+    }
+
+    const buildTree = (tags: Map<string, number>): TagNode => {
+      const root: TagNode = {
+        name: "All Tags",
+        fullPath: "",
+        count: 0,
+        children: new Map(),
+        isHierarchical: false,
+      };
+
+      const sorted = Array.from(tags.entries()).sort((a, b) => b[1] - a[1]);
+
+      for (const [tag, count] of sorted) {
+        const parts = tag.split("/");
+        let current = root;
+
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          const path = parts.slice(0, i + 1).join("/");
+
+          if (!current.children.has(part)) {
+            current.children.set(part, {
+              name: part,
+              fullPath: path,
+              count: 0,
+              children: new Map(),
+              isHierarchical: i > 0 || parts.length > 1,
+            });
+          }
+
+          const child = current.children.get(part)!;
+
+          if (i === parts.length - 1) {
+            child.count = count;
+            child.isHierarchical = parts.length > 1;
+          }
+
+          current = child;
+        }
+      }
+
+      return root;
+    };
+
+    const renderNode = (parent: HTMLElement, node: TagNode, depth: number) => {
+      if (depth > 0) {
+        const row = parent.createEl("div", { cls: "tag-tree-row" });
+        row.style.paddingLeft = `${depth * 16}px`;
+
+        // Expand/collapse arrow for nodes with children
+        if (node.children.size > 0) {
+          const arrow = row.createEl("span", { cls: "tag-tree-arrow" });
+          setIcon(arrow, "right-triangle");
+          arrow.style.cursor = "pointer";
+          arrow.style.marginRight = "4px";
+          arrow.style.transition = "transform 0.15s";
+
+          const childrenContainer = parent.createEl("div", { cls: "tag-tree-children" });
+
+          arrow.onclick = () => {
+            const isCollapsed = childrenContainer.hasClass("collapsed");
+            if (isCollapsed) {
+              childrenContainer.removeClass("collapsed");
+              arrow.style.transform = "rotate(90deg)";
+            } else {
+              childrenContainer.addClass("collapsed");
+              arrow.style.transform = "rotate(0deg)";
+            }
+          };
+
+          // Render children
+          for (const child of node.children.values()) {
+            renderNode(childrenContainer, child, depth + 1);
+          }
+        } else {
+          row.createEl("span", { cls: "tag-tree-spacer", text: "  " });
+        }
+
+        // Tag name
+        const nameSpan = row.createEl("span", { cls: "tag-tree-name", text: node.name });
+        if (!node.isHierarchical) {
+          nameSpan.addClass("tag-flat");
+        }
+
+        // Count badge
+        if (node.count > 0) {
+          row.createEl("span", { cls: "tag-tree-count", text: node.count.toString() });
+        }
+
+        // Actions for leaf tags
+        if (node.children.size === 0 && node.count > 0) {
+          const actionGroup = row.createEl("span", { cls: "tag-tree-actions" });
+
+          // Find similar button
+          const findBtn = actionGroup.createEl("span", { cls: "tag-tree-action", attr: { "aria-label": "Find similar" } });
+          setIcon(findBtn, "search");
+          findBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const similar = tagManager.findSimilar(node.fullPath, 0.5);
+            if (similar.length === 0) {
+              new Notice(`No similar tags found for "${node.fullPath}"`);
+              return;
+            }
+            let message = `Tags similar to "${node.fullPath}":\n\n`;
+            similar.forEach((s: any, i: number) => {
+              message += `${i + 1}. ${s.tag} (${(s.similarity * 100).toFixed(0)}% similar)\n`;
+            });
+            new Notice(message);
+          };
+
+          // Rename button
+          const renameBtn = actionGroup.createEl("span", { cls: "tag-tree-action", attr: { "aria-label": "Rename" } });
+          setIcon(renameBtn, "pencil");
+          renameBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const newName = await this.showTagRenameDialog(node.fullPath);
+            if (newName && newName !== node.fullPath) {
+              const result = await tagManager.mergeTags(node.fullPath, newName);
+              new Notice(`✅ Renamed "${node.fullPath}" → "${newName}" in ${result.updatedFiles} files`);
+              modal.close();
+            }
+          };
+
+          // Files button
+          const filesBtn = actionGroup.createEl("span", { cls: "tag-tree-action", attr: { "aria-label": "Show files" } });
+          setIcon(filesBtn, "file-text");
+          filesBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const normalized = node.fullPath.startsWith("#") ? node.fullPath : `#${node.fullPath}`;
+            const files = this.app.vault.getMarkdownFiles().filter(file => {
+              const cache = this.app.metadataCache.getFileCache(file);
+              if (!cache) return false;
+              if (cache.tags?.some(t => t.tag === normalized)) return true;
+              const fm = cache.frontmatter?.tags;
+              if (Array.isArray(fm)) return fm.some(t => `#${t.replace(/^#/, "")}` === normalized);
+              return false;
+            });
+
+            if (files.length === 0) {
+              new Notice(`No files with tag "${node.fullPath}"`);
+              return;
+            }
+
+            let message = `Files tagged "${node.fullPath}" (${files.length}):\n\n`;
+            files.forEach((f, i) => {
+              message += `${i + 1}. ${f.path}\n`;
+            });
+            new Notice(message);
+          };
+        }
+      }
+
+      // Root level: render top-level children
+      if (depth === 0) {
+        for (const child of node.children.values()) {
+          renderNode(parent, child, depth + 1);
+        }
+      }
+    };
+
+    const root = buildTree(allTags);
+    renderNode(container, root, 0);
+  }
+
+  private showTagRenameDialog(currentTag: string): Promise<string> {
+    return new Promise((resolve) => {
+      const modal = new Modal(this.app);
+      modal.setTitle("Rename Tag");
+
+      const content = modal.contentEl.createEl("div");
+      content.createEl("p", { text: `Current: ${currentTag}` });
+
+      const input = content.createEl("input", { type: "text", value: currentTag });
+      input.style.width = "100%";
+      input.style.marginBottom = "12px";
+      input.select();
+
+      const buttonContainer = content.createEl("div", { cls: "dialog-buttons" });
+
+      const okButton = buttonContainer.createEl("button", { text: "Rename", cls: "mod-cta" });
+      okButton.onclick = () => { resolve(input.value); modal.close(); };
+
+      const cancelButton = buttonContainer.createEl("button", { text: "Cancel" });
+      cancelButton.onclick = () => { resolve(""); modal.close(); };
+
+      input.onkeydown = (e: KeyboardEvent) => {
+        if (e.key === "Enter") { resolve(input.value); modal.close(); }
+        if (e.key === "Escape") { resolve(""); modal.close(); }
+      };
+
+      modal.open();
+    });
+  }
+
+  private async runTagAuditFromModal() {
+    if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+      new Notice("Please connect to an AI agent first");
+      return;
+    }
+
+    try {
+      new Notice("🔍 Running tag audit...");
+      const { VaultFileSystemAdapter } = await import("./vault-adapter");
+      const { TagManager } = await import("./utils/tag-manager");
+      const { TagAuditor } = await import("./utils/tag-auditor");
+
+      const vaultAdapter = new VaultFileSystemAdapter(this.app);
+      const tagManager = new TagManager(vaultAdapter);
+      const tagAuditor = new TagAuditor(this.claudeConnection, tagManager, vaultAdapter, this.settingsProvider);
+
+      const report = await tagAuditor.auditAllTags();
+
+      const modal = new Modal(this.app);
+      modal.setTitle("Tag Audit Report");
+      modal.contentEl.addClass("tag-manager-modal");
+
+      const container = modal.contentEl.createEl("div", { cls: "tag-manager-container" });
+
+      // Health score
+      const scoreContainer = container.createEl("div", { cls: "tag-audit-score" });
+      const scoreClass = report.healthScore >= 80 ? "good" : report.healthScore >= 50 ? "medium" : "bad";
+      scoreContainer.createEl("div", { text: `${report.healthScore}`, cls: `tag-audit-score-value ${scoreClass}` });
+      scoreContainer.createEl("div", { text: "Health Score", cls: "tag-audit-score-label" });
+
+      // Issues list
+      const issues = report.issues;
+      const sections = [
+        { title: "Flat Tags", items: issues.flatTags.map((t: any) => `${t.tag} (${t.count}x)`), icon: "layers" },
+        { title: "Similar Tag Groups", items: issues.similarTags.map((g: any) => g.group.join(" ≈ ")), icon: "copy" },
+        { title: "Duplicate Tags", items: issues.duplicateTags.map((d: any) => d.tags.join(" = ")), icon: "git-merge" },
+        { title: "Rarely Used Tags", items: issues.rarelyUsedTags.map((t: any) => `${t.tag} (${t.count}x)`), icon: "trash" },
+        { title: "Overused Tags", items: issues.overusedTags.map((t: any) => `${t.tag} (${t.count}x)`), icon: "alert-triangle" },
+      ];
+
+      for (const section of sections) {
+        if (section.items.length === 0) continue;
+        const sectionEl = container.createEl("div", { cls: "tag-audit-section" });
+        const sectionHeader = sectionEl.createEl("div", { cls: "tag-audit-section-header" });
+        setIcon(sectionHeader.createEl("span"), section.icon);
+        sectionHeader.createEl("span", { text: `${section.title} (${section.items.length})` });
+
+        const list = sectionEl.createEl("div", { cls: "tag-audit-list" });
+        for (const item of section.items.slice(0, 20)) {
+          list.createEl("div", { text: item, cls: "tag-audit-item" });
+        }
+        if (section.items.length > 20) {
+          list.createEl("div", { text: `... and ${section.items.length - 20} more`, cls: "tag-audit-item tag-audit-more" });
+        }
+      }
+
+      // Optimization suggestions
+      if (report.optimizationSuggestions.length > 0) {
+        const suggestionsEl = container.createEl("div", { cls: "tag-audit-section" });
+        suggestionsEl.createEl("h4", { text: "Suggestions" });
+        for (const s of report.optimizationSuggestions) {
+          const item = suggestionsEl.createEl("div", { cls: "tag-audit-suggestion" });
+          item.createEl("span", { text: s.description });
+          const tags = item.createEl("div", { cls: "tag-audit-suggestion-meta" });
+          tags.createEl("span", { text: `Impact: ${s.impact}`, cls: `tag-impact-${s.impact}` });
+          tags.createEl("span", { text: `Effort: ${s.effort}`, cls: `tag-effort-${s.effort}` });
+        }
+      }
+
+      modal.open();
+
+    } catch (error: any) {
+      new Notice(`❌ Audit failed: ${error.message}`);
+    }
+  }
+
+  private async runAutoFixFromModal() {
+    if (!this.claudeConnection || !this.claudeConnection.isConnected()) {
+      new Notice("Please connect to an AI agent first");
+      return;
+    }
+
+    try {
+      const { VaultFileSystemAdapter } = await import("./vault-adapter");
+      const { TagManager } = await import("./utils/tag-manager");
+
+      const vaultAdapter = new VaultFileSystemAdapter(this.app);
+      const tagManager = new TagManager(vaultAdapter);
+
+      await tagManager.learnFromExistingTags();
+      const allTags = tagManager.getAllTags();
+      const flatTags = Array.from(allTags.keys()).filter(t => !t.includes("/"));
+
+      if (flatTags.length === 0) {
+        new Notice("No flat tags to fix!");
+        return;
+      }
+
+      const message = `Found ${flatTags.length} flat tags that can be converted to hierarchical format:\n\n${flatTags.slice(0, 10).map(t => `• ${t}`).join("\n")}${flatTags.length > 10 ? `\n... and ${flatTags.length - 10} more` : ""}\n\nConvert these tags?`;
+
+      const shouldProceed = await this.showTagConfirmDialog("Auto-Fix Flat Tags", message);
+
+      if (!shouldProceed) return;
+
+      new Notice("🔄 Converting tags...");
+      const { TagAuditor } = await import("./utils/tag-auditor");
+      const { TagMigrator } = await import("./utils/tag-migrator");
+
+      const tagAuditor = new TagAuditor(this.claudeConnection, tagManager, vaultAdapter, this.settingsProvider);
+      const migrator = new TagMigrator(tagManager, tagAuditor, vaultAdapter);
+      const result = await migrator.migrate();
+
+      if (result.success) {
+        new Notice(`✅ Converted ${result.stats.convertedToHierarchical} tags in ${result.updatedFiles} files`);
+      } else {
+        new Notice(`❌ Migration had ${result.errors.length} errors`);
+      }
+
+    } catch (error: any) {
+      new Notice(`❌ Auto-fix failed: ${error.message}`);
+    }
+  }
+
+  private showTagConfirmDialog(title: string, message: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const modal = new Modal(this.app);
+      modal.setTitle(title);
+
+      const content = modal.contentEl.createEl("div");
+      content.style.whiteSpace = "pre-wrap";
+      content.style.maxHeight = "400px";
+      content.style.overflowY = "auto";
+      content.createEl("p", { text: message });
+
+      const buttonContainer = content.createEl("div", { cls: "dialog-buttons" });
+
+      const okButton = buttonContainer.createEl("button", { text: "Yes", cls: "mod-cta" });
+      okButton.onclick = () => { resolve(true); modal.close(); };
+
+      const cancelButton = buttonContainer.createEl("button", { text: "No" });
+      cancelButton.onclick = () => { resolve(false); modal.close(); };
+
+      modal.open();
+    });
+  }
 }
 
 class RawFileSuggestModal extends FuzzySuggestModal<string> {

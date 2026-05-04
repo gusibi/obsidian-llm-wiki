@@ -182,7 +182,15 @@ export class ContextBuilder {
   }
 
   private async buildTagContext(tag: string, tokenBudget: number): Promise<ContextItem | null> {
-    const files = this.getFilesByTag(tag);
+    // 支持前缀查询，例如 @tag(ai/*) 匹配所有 ai/ 开头的标签
+    let files: TFile[] = [];
+    if (tag.endsWith("/*")) {
+      const prefix = tag.slice(0, -2); // 移除 /*
+      files = this.getFilesByTagPrefix(prefix);
+    } else {
+      files = this.getFilesByTag(tag);
+    }
+
     if (files.length === 0) {
       return null;
     }
@@ -429,6 +437,43 @@ export class ContextBuilder {
 
       if (typeof frontmatterTags === "string") {
         return `#${frontmatterTags.replace(/^#/, "")}` === normalized;
+      }
+
+      return false;
+    });
+  }
+
+  /**
+   * 根据标签前缀获取文件，支持层级查询
+   * 例如前缀 "ai/" 匹配所有 ai/ 开头的标签，如 ai/machine-learning、ai/nlp 等
+   */
+  private getFilesByTagPrefix(prefix: string): TFile[] {
+    const normalizedPrefix = prefix.startsWith("#") ? prefix : `#${prefix}`;
+    const files = this.app.vault.getMarkdownFiles();
+
+    return files.filter((file) => {
+      const cache = this.app.metadataCache.getFileCache(file);
+      if (!cache) return false;
+
+      // 检查正文标签
+      if (cache.tags?.some((t) => t.tag.startsWith(normalizedPrefix))) {
+        return true;
+      }
+
+      // 检查 frontmatter 标签
+      const frontmatterTags = cache.frontmatter?.tags;
+      if (!frontmatterTags) return false;
+
+      if (Array.isArray(frontmatterTags)) {
+        return frontmatterTags.some((t) => {
+          const normalizedTag = `#${t.replace(/^#/, "")}`;
+          return normalizedTag.startsWith(normalizedPrefix);
+        });
+      }
+
+      if (typeof frontmatterTags === "string") {
+        const normalizedTag = `#${frontmatterTags.replace(/^#/, "")}`;
+        return normalizedTag.startsWith(normalizedPrefix);
       }
 
       return false;
