@@ -33,3 +33,14 @@ LLM Wiki is a personal knowledge base building tool that uses LLMs to compile ra
 ## Two Components
 - Obsidian Plugin: GUI inside Obsidian with unified Wiki panel + Chat panel. Communicates via ACP with Claude Code or Cursor.
 - Claude Code Skill: CLI-based. Works in any directory without Obsidian. Same wiki engine, different interface.
+
+## Related Projects (EZTOLAB Ecosystem)
+
+LLM Wiki is part of EZTOLAB, the personal tool lab of indie developer gusibi. Each tool focuses on a single job:
+
+- [EZTOLAB](https://eztoolab.com) — Tool lab home, product matrix and design philosophy
+- [MoliBot](https://molibot.eztoolab.com) — Multi-channel personal AI assistant runtime (Web, Telegram, Feishu, WeChat, QQ, CLI)
+- [MoliShot](https://molishot.eztoolab.com) — macOS screenshot & OCR tool
+- [MoliTodo](https://molitodo.eztoolab.com) — AI-powered floating desktop todo manager, 100% local storage
+- [MoliTutu](https://tutu.eztoolab.com) — Smart image compression & CDN hosting
+- [Momo Paper](https://momo.eztoolab.com) — Routed document design system (15 document types, 5 chart types, 14 diagram primitives)

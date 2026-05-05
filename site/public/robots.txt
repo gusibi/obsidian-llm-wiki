@@ -1,34 +1,51 @@
 User-agent: *
 Allow: /
-Sitemap: https://llmwiki.eztoolab.com/sitemap.xml
 
-# AI Crawlers — allow for visibility
-User-agent: GPTBot
+# Search & retrieval crawlers — allow (power AI search results)
+User-agent: OAI-SearchBot
 Allow: /
 
-User-agent: Claude-Web
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: CCBot
-Allow: /
-
-User-agent: Google-Extended
+User-agent: Claude-SearchBot
 Allow: /
 
 User-agent: PerplexityBot
 Allow: /
 
+# User-triggered crawlers — allow (fire when user explicitly shares URL with AI)
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Agent
+Allow: /
+
+# Training crawlers — disallow (use content for model training, not search visibility)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+# Opt-out tokens — disallow (AI training opt-out signals)
+User-agent: Google-Extended
+Disallow: /
+
 User-agent: Applebot-Extended
-Allow: /
+Disallow: /
 
-User-agent: cohere-ai
-Allow: /
+# Undeclared crawlers — disallow (no clear purpose stated)
+User-agent: Bytespider
+Disallow: /
 
-User-agent: Omgili
-Allow: /
-
-User-agent: Diffbot
-Allow: /
+Sitemap: https://llmwiki.eztoolab.com/sitemap.xml
